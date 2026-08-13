@@ -1,0 +1,51 @@
+- id: lights_utility_room_contact
+  alias: Utility Room Light - Contact
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.utility_room_sensor_magnet_contact
+      to: "on"
+      id: door_open
+    - trigger: state
+      entity_id: binary_sensor.utility_room_sensor_magnet_contact
+      to: "off"
+      id: door_closed
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: door_open
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.utility_room_light
+        - conditions:
+            - condition: trigger
+              id: door_closed
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.utility_room_light
+        - conditions:
+            - condition: trigger
+              id: watchdog
+            - condition: state
+              entity_id: light.utility_room_light
+              state: "on"
+            - condition: template
+              value_template: >-
+                {{ (now() - states.light.utility_room_light.last_changed).total_seconds() >= 300 }}
+          sequence:
+            - action: logbook.log
+              data:
+                name: Lights Watchdog
+                message: >-
+                  Turned off light.utility_room_light (on for
+                  {{ ((now() - states.light.utility_room_light.last_changed).total_seconds() / 60)
+                     | round(0) }} minutes)
+                entity_id: light.utility_room_light
+            - action: light.turn_off
+              target:
+                entity_id: light.utility_room_light

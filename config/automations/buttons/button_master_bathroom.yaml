@@ -1,0 +1,49 @@
+- id: button_master_bathroom
+  alias: Master Bathroom Button
+  trigger:
+    - trigger: device
+      domain: mqtt
+      device_id: 8d9694fa41fa1f6ce3afbeb9ab235a3e
+      type: action
+      subtype: hold
+      id: hold
+    - trigger: device
+      domain: mqtt
+      device_id: 8d9694fa41fa1f6ce3afbeb9ab235a3e
+      type: action
+      subtype: single
+      id: single
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: hold
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: cover.master_bathroom_shade
+                  state: open
+              then:
+                - action: cover.close_cover
+                  target:
+                    entity_id: cover.master_bathroom_shade
+              else:
+                - action: cover.open_cover
+                  target:
+                    entity_id: cover.master_bathroom_shade
+        - conditions:
+            - condition: trigger
+              id: single
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: cover.master_bathroom_shade
+                  state: open
+              then:
+                - action: scene.turn_on
+                  target:
+                    entity_id: scene.close_master
+              else:
+                - action: scene.turn_on
+                  target:
+                    entity_id: scene.open_master

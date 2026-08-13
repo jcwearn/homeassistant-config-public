@@ -1,0 +1,123 @@
+- id: turn_on_basement_stairwell_light_motion
+  alias: Turn On Basement Stairwell Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.basement_stairwell_motion
+      to: "on"
+  condition:
+    - condition: template
+      value_template: >-
+        {{ is_state('binary_sensor.main_floor_stairwell_motion', 'off') or
+           (now() - states.binary_sensor.main_floor_stairwell_motion.last_changed).total_seconds() > 1 }}
+  action:
+    - choose:
+        - conditions:
+            - condition: numeric_state
+              entity_id: sensor.basement_stairwell_sensor_motion_01_illuminance
+              below: input_number.basement_lux_threshold
+            - condition: state
+              entity_id: input_boolean.party_mode
+              state: "off"
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.basement_hallway_relax
+            - action: scene.turn_on
+              target:
+                entity_id: scene.basement_stairwell_pleasant
+        - conditions:
+            - condition: numeric_state
+              entity_id: sensor.basement_stairwell_sensor_motion_01_illuminance
+              above: input_number.basement_lux_threshold
+            - condition: state
+              entity_id: light.basement_hallway
+              state: "on"
+            - condition: state
+              entity_id: input_boolean.party_mode
+              state: "off"
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.basement_stairwell_pleasant
+
+- id: turn_off_basement_stairwell_light_motion
+  alias: Turn Off Basement Stairwell Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.basement_stairwell_motion
+      to: "off"
+      id: motion
+    - trigger: state
+      entity_id: light.basement_stairwell_lights
+      to: "on"
+      for:
+        minutes: 5
+      id: fallback
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.basement_stairwell_lights
+      state: "on"
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+        - condition: template
+          value_template: >-
+            {{ (now() - states.light.basement_stairwell_lights.last_changed).total_seconds() >= 300 }}
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.basement_stairwell_lights (on for
+              {{ ((now() - states.light.basement_stairwell_lights.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.basement_stairwell_lights
+    - action: light.turn_off
+      target:
+        entity_id: light.basement_stairwell_lights
+
+- id: turn_off_basement_hallway_light
+  alias: Turn Off Basement Hallway Light
+  trigger:
+    - trigger: state
+      entity_id: light.basement_hallway
+      to: "on"
+      for:
+        minutes: 5
+      id: fallback
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.basement_hallway
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.basement_hallway.last_changed).total_seconds() >= 300 }}
+    - condition: state
+      entity_id: input_boolean.party_mode
+      state: "off"
+    - condition: state
+      entity_id: binary_sensor.basement_doors
+      state: "off"
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.basement_hallway (on for
+              {{ ((now() - states.light.basement_hallway.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.basement_hallway
+    - action: light.turn_off
+      target:
+        entity_id: light.basement_hallway

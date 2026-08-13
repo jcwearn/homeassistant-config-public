@@ -1,0 +1,73 @@
+- id: turn_on_laundry_room_light_motion
+  alias: Turn On Laundry Room Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.laundry_room_sensor_motion_occupancy
+      to: "on"
+    - trigger: state
+      entity_id: binary_sensor.laundry_room_sensor_contact_contact
+      to: "on"
+  action:
+    - action: light.turn_on
+      target:
+        entity_id: light.laundry_room_light
+
+- id: turn_off_laundry_room_light_timer
+  alias: Turn Off Laundry Room Light - Timer
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.laundry_room_sensor_motion_occupancy
+      to: "off"
+      for:
+        minutes: 5
+      id: motion
+    - trigger: state
+      entity_id: light.laundry_room_light
+      to: "on"
+      for:
+        minutes: 5
+      id: fallback
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.laundry_room_light
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.laundry_room_light.last_changed).total_seconds() >= 300 }}
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.laundry_room_light (on for
+              {{ ((now() - states.light.laundry_room_light.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.laundry_room_light
+    - action: light.turn_off
+      target:
+        entity_id: light.laundry_room_light
+
+- id: turn_off_laundry_room_door_close
+  alias: Turn Off Laundry Room Light - Door Close
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.laundry_room_sensor_contact_contact
+      to: "off"
+  condition:
+    - condition: state
+      entity_id: light.laundry_room_light
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.laundry_room_light.last_changed).total_seconds() >= 20 }}
+  action:
+    - action: light.turn_off
+      target:
+        entity_id: light.laundry_room_light

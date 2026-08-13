@@ -1,0 +1,93 @@
+- id: button_living_room_lights
+  alias: Living Room Light Button
+  trigger:
+    - trigger: device
+      domain: mqtt
+      device_id: 79815df2db1594fab63b54896e15cc66
+      type: action
+      subtype: 1_single
+      id: 1_single
+    - trigger: device
+      domain: mqtt
+      device_id: 79815df2db1594fab63b54896e15cc66
+      type: action
+      subtype: 1_double
+      id: 1_double
+    - trigger: device
+      domain: mqtt
+      device_id: 79815df2db1594fab63b54896e15cc66
+      type: action
+      subtype: 2_single
+      id: 2_single
+    - trigger: device
+      domain: mqtt
+      device_id: 79815df2db1594fab63b54896e15cc66
+      type: action
+      subtype: 3_single
+      id: 3_single
+    - trigger: device
+      domain: mqtt
+      device_id: 79815df2db1594fab63b54896e15cc66
+      type: action
+      subtype: 4_single
+      id: 4_single
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: 1_single
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.downstairs_read
+            - action: timer.start
+              target:
+                entity_id: timer.tv_lights_timer
+              data:
+                duration: "01:00:00"
+        - conditions:
+            - condition: trigger
+              id: 1_double
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.cooking_cleaning_kitchen
+            - action: timer.start
+              target:
+                entity_id: timer.tv_lights_timer
+              data:
+                duration: "01:00:00"
+        - conditions:
+            - condition: trigger
+              id: 2_single
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.downstairs_relax
+            - action: timer.start
+              target:
+                entity_id: timer.tv_lights_timer
+              data:
+                duration: "01:00:00"
+        - conditions:
+            - condition: trigger
+              id: 3_single
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.downstairs_nightlight
+            - action: timer.start
+              target:
+                entity_id: timer.tv_lights_timer
+              data:
+                duration: "01:00:00"
+        - conditions:
+            - condition: trigger
+              id: 4_single
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.main_floor_lights
+            - action: timer.finish
+              target:
+                entity_id: timer.tv_lights_timer

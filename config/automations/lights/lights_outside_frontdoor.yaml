@@ -1,0 +1,38 @@
+- id: turn_off_outside_front_door_light
+  alias: Turn Off Outside Front Door Light
+  trigger:
+    - trigger: state
+      entity_id: light.outside_front_door_light
+      to: "on"
+      for:
+        minutes: 5
+      id: fallback
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.outside_front_door_light
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.outside_front_door_light.last_changed).total_seconds() >= 300 }}
+    - condition: state
+      entity_id: input_boolean.party_mode
+      state: "off"
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.outside_front_door_light (on for
+              {{ ((now() - states.light.outside_front_door_light.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.outside_front_door_light
+    - action: light.turn_off
+      target:
+        entity_id: light.outside_front_door_light

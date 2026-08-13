@@ -1,0 +1,54 @@
+- id: button_kitchen
+  alias: Kitchen Button
+  trigger:
+    - trigger: device
+      domain: mqtt
+      device_id: 5e7d256d8c398fd08b527f0e7595b390
+      type: action
+      subtype: single
+  action:
+    - action: timer.start
+      target:
+        entity_id: timer.tv_lights_timer
+      data:
+        duration: "01:00:00"
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: light.main_floor_lights
+              state: "off"
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.cooking_cleaning_kitchen
+        - conditions:
+            - condition: template
+              value_template: >-
+                {{ state_attr('light.kitchen', 'brightness') == 255 and
+                   state_attr('light.kitchen', 'color_temp_kelvin') == 4291 }}
+          sequence:
+            - action: timer.finish
+              target:
+                entity_id: timer.tv_lights_timer
+            - if:
+                - condition: state
+                  entity_id: light.living_room_light_1
+                  state: "on"
+              then:
+                - action: light.turn_on
+                  target:
+                    entity_id: light.kitchen
+                  data:
+                    brightness: "{{ state_attr('light.living_room_light_1', 'brightness') }}"
+                    color_temp_kelvin: "{{ state_attr('light.living_room_light_1', 'color_temp_kelvin') }}"
+                - action: light.turn_off
+                  target:
+                    entity_id: light.kitchen_under_cabinet
+              else:
+                - action: light.turn_off
+                  target:
+                    entity_id: light.main_floor_lights
+      default:
+        - action: scene.turn_on
+          target:
+            entity_id: scene.cooking_cleaning_kitchen

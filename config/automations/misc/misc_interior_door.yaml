@@ -1,0 +1,99 @@
+- id: misc_interior_door
+  alias: Interior Door - Master Bedroom
+  mode: queued
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.master_bedroom_sensor_magnet_contact
+      to: "on"
+      id: door_open
+    - trigger: state
+      entity_id: binary_sensor.master_bedroom_sensor_magnet_contact
+      to: "off"
+      id: door_closed
+  condition:
+    - condition: template
+      value_template: >-
+        {{ trigger.from_state.state not in ['unknown', 'unavailable'] }}
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.party_mode
+              state: "on"
+          sequence:
+            - choose:
+                - conditions:
+                    - condition: trigger
+                      id: door_open
+                  sequence:
+                    - action: notify.mobile_app_jacksons_iphone
+                      data:
+                        title: Master Bedroom Opened
+                        message: Someone opened your room during party mode. Ruh roh!
+                - conditions:
+                    - condition: trigger
+                      id: door_closed
+                  sequence:
+                    - action: notify.mobile_app_jacksons_iphone
+                      data:
+                        title: Master Bedroom Closed
+                        message: The master bedroom door has been closed
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.party_mode
+              state: "off"
+          sequence:
+            - choose:
+                - conditions:
+                    - condition: trigger
+                      id: door_open
+                  sequence:
+                    - if:
+                        - condition: state
+                          entity_id: sun.sun
+                          state: above_horizon
+                        - condition: state
+                          entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_either
+                          state: "off"
+                        - condition: template
+                          value_template: "{{ 5 <= now().hour < 12 }}"
+                      then:
+                        - action: fan.turn_off
+                          target:
+                            entity_id: fan.master_bedroom_ceiling_fan
+                    - if:
+                        - condition: not
+                          conditions:
+                            - condition: state
+                              entity_id: alarm_control_panel.ha_alarm
+                              state: disarmed
+                      then:
+                        - action: script.disarm
+                          data:
+                            source: interior_door
+                - conditions:
+                    - condition: trigger
+                      id: door_closed
+                  sequence:
+                    - if:
+                        - condition: state
+                          entity_id: sun.sun
+                          state: below_horizon
+                        - condition: template
+                          value_template: "{{ now().hour >= 20 or now().hour < 5 }}"
+                      then:
+                        - action: cover.close_cover
+                          target:
+                            entity_id: cover.master_bedroom_curtains
+                        - if:
+                            - condition: state
+                              entity_id: fan.master_bedroom_ceiling_fan
+                              state: "off"
+                          then:
+                            - variables:
+                                temp: "{{ states('sensor.master_bedroom_smartsensor_temperature') | float(70) }}"
+                            - action: fan.set_percentage
+                              target:
+                                entity_id: fan.master_bedroom_ceiling_fan
+                              data:
+                                percentage: "{{ 100 if temp > 71 else 75 }}"

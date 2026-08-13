@@ -1,0 +1,16 @@
+name: Publish Public Snapshot
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish:
+    uses: jcwearn/workflows/.github/workflows/public-sync.yaml@main
+    with:
+      target-repo: jcwearn/homeassistant-config-public
+      readme-override: .github/public-README.md
+    secrets:
+      DEPLOY_KEY: ${{ secrets.PUBLIC_SYNC_DEPLOY_KEY }}

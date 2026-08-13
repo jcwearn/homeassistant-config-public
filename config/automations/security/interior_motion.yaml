@@ -1,0 +1,38 @@
+- id: security_interior_motion
+  alias: Interior Motion Detected
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.office_sensor_motion_occupancy
+      to: "on"
+      id: office
+    - trigger: state
+      entity_id: binary_sensor.ecobee_sensor_office_occupancy
+      to: "on"
+      id: office
+    - trigger: state
+      entity_id: binary_sensor.ecobee_sensor_dining_room_shelf_occupancy
+      to: "on"
+      id: dining_room
+  condition:
+    # Rate limit: 1 per minute
+    - condition: template
+      value_template: >-
+        {{ this.attributes.last_triggered is none
+           or (now() - this.attributes.last_triggered).total_seconds() > 60 }}
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: alarm_control_panel.ha_alarm
+          state: armed_away
+        - condition: state
+          entity_id: alarm_control_panel.ha_alarm
+          state: triggered
+  action:
+    - variables:
+        source: >-
+          {% set names = {'office': 'Office', 'dining_room': 'Dining Room'} %}
+          {{ names[trigger.id] }}
+    - action: notify.mobile_app_jacksons_iphone
+      data:
+        title: Motion Detected
+        message: "Motion detected in {{ source }}"

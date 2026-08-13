@@ -1,0 +1,54 @@
+# Decrypted secrets (SOPS-encrypted versions are committed)
+config/secrets.yaml
+esphome/secrets.yaml
+
+# HA runtime data
+config/.storage/
+config/*.db
+config/*.db-shm
+config/*.db-wal
+config/*.log
+config/tts/
+config/deps/
+__pycache__/
+config/custom_components/
+config/blueprints/
+config/.cloud/
+config/www/
+config/backups/
+
+# Zigbee2MQTT runtime
+zigbee2mqtt/log/
+zigbee2mqtt/state.json
+zigbee2mqtt/database.db
+zigbee2mqtt/coordinator_backup.json
+
+# Zigbee2MQTT deploy temps (decrypted secrets + rendered config)
+zigbee2mqtt/secrets.yaml
+zigbee2mqtt/configuration.rendered.yaml
+
+# ESPHome build artifacts
+esphome/.esphome/
+
+# Node-RED exports (may contain secrets)
+flows.json
+
+# Export data (from export-from-ha.sh)
+.export/
+
+# Editor / IDE
+.vscode/
+*.swp
+*.swo
+*~
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Legacy config (contains sensitive data)
+legacy-config/
+
+# Claude Code
+.claude/

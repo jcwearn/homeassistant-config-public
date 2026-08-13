@@ -1,0 +1,74 @@
+close_blinds:
+  alias: Close Blinds
+  icon: mdi:blinds-horizontal-closed
+  sequence:
+    - action: scene.turn_on
+      target:
+        entity_id: scene.close_all
+    # scene.close_all is a Lutron bridge scene and cannot reach the curtains
+    - if:
+        - condition: state
+          entity_id: binary_sensor.is_somebody_home
+          state: "on"
+      then:
+        - action: cover.close_cover
+          target:
+            entity_id: cover.master_bedroom_curtains
+
+open_blinds:
+  alias: Open Blinds
+  icon: mdi:blinds-open
+  sequence:
+    - variables:
+        master_allowed: >-
+          {{ is_state('binary_sensor.master_bathroom_sensor_magnet_contact', 'on')
+             and is_state('binary_sensor.master_bedroom_sensor_magnet_contact', 'on')
+             and is_state('binary_sensor.bed_presence_c18e1c_bed_occupied_either', 'off') }}
+        office_allowed: >-
+          {{ is_state('binary_sensor.office_bathroom_sensor_magnet_contact', 'on')
+             and is_state('binary_sensor.office_sensor_magnet_contact', 'on') }}
+        guest_allowed: >-
+          {{ is_state('binary_sensor.guest_bedroom_sensor_magnet_contact', 'on') }}
+    # If all rooms allowed, open everything at once
+    - if:
+        - condition: template
+          value_template: "{{ master_allowed and office_allowed and guest_allowed }}"
+      then:
+        - action: scene.turn_on
+          target:
+            entity_id: scene.open_all
+        - action: cover.open_cover
+          target:
+            entity_id: cover.master_bedroom_curtains
+      else:
+        # Open main floor blinds unconditionally
+        - action: scene.turn_on
+          target:
+            entity_id: scene.open_main_floor
+        # Open master bedroom if allowed
+        - if:
+            - condition: template
+              value_template: "{{ master_allowed }}"
+          then:
+            - action: cover.open_cover
+              target:
+                entity_id:
+                  - cover.master_bedroom_master_shade
+                  - cover.master_bathroom_shade
+                  - cover.master_bedroom_curtains
+        # Open office if allowed
+        - if:
+            - condition: template
+              value_template: "{{ office_allowed }}"
+          then:
+            - action: cover.open_cover
+              target:
+                entity_id: cover.office_shade
+        # Open guest bedroom if allowed
+        - if:
+            - condition: template
+              value_template: "{{ guest_allowed }}"
+          then:
+            - action: cover.open_cover
+              target:
+                entity_id: cover.guest_bedroom_shade

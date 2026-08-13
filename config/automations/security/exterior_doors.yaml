@@ -1,0 +1,123 @@
+- id: security_exterior_doors
+  alias: Exterior Door Sensors
+  mode: queued
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.front_door_sensor_magnet_contact
+      to:
+        - "on"
+        - "off"
+      id: front_door
+    - trigger: state
+      entity_id: binary_sensor.garage_door_sensor_magnet_contact
+      to:
+        - "on"
+        - "off"
+      id: garage_door
+    - trigger: state
+      entity_id: binary_sensor.roof_door_sensor_magnet_contact
+      to:
+        - "on"
+        - "off"
+      id: roof_door
+  condition:
+    - condition: template
+      value_template: >-
+        {{ trigger.from_state.state not in ['unknown', 'unavailable'] }}
+  action:
+    - variables:
+        door_name: "{{ trigger.to_state.attributes.friendly_name }}"
+        door_open: "{{ trigger.to_state.state == 'on' }}"
+        door_closed: "{{ trigger.to_state.state == 'off' }}"
+        alarm_state: "{{ states('alarm_control_panel.ha_alarm') }}"
+    # Front door light at night (independent of alarm state)
+    - if:
+        - condition: trigger
+          id: front_door
+        - condition: template
+          value_template: "{{ door_open }}"
+        - condition: state
+          entity_id: sun.sun
+          state: below_horizon
+      then:
+        - action: scene.turn_on
+          target:
+            entity_id: scene.front_door_bright
+    # Door open/close: alarm trigger, chime, and greeting (suppressed in party mode)
+    - if:
+        - condition: state
+          entity_id: input_boolean.party_mode
+          state: "off"
+      then:
+        - if:
+            - condition: template
+              value_template: "{{ door_open }}"
+          then:
+            # Alarm trigger
+            - if:
+                - condition: template
+                  value_template: "{{ alarm_state in ['armed_away', 'armed_home'] }}"
+              then:
+                - action: script.trigger_alarm
+            # Open chime
+            - if:
+                - condition: template
+                  value_template: "{{ alarm_state in ['armed_home', 'disarmed'] }}"
+              then:
+                - action: media_player.play_media
+                  data:
+                    entity_id: media_player.living_room_homepod
+                    media_content_id: media-source://media_source/local/audio/open.wav
+                    media_content_type: music
+            # Greeting (disarmed, arriving from armed_away within 15 min)
+            - if:
+                - condition: template
+                  value_template: >-
+                    {{ alarm_state == 'disarmed'
+                       and states('input_text.alarm_previous_state') == 'armed_away'
+                       and (now() - states.alarm_control_panel.ha_alarm.last_changed).total_seconds() < 900 }}
+              then:
+                - variables:
+                    persons: "{{ state_attr('zone.home', 'persons') | default([]) }}"
+                    names: >-
+                      {% set name_map = {
+                        'person.jackson': 'Jackson',
+                        'person.anupama': 'Anupama'
+                      } %}
+                      {% set ns = namespace(result=[]) %}
+                      {% for p in persons %}
+                        {% if p in name_map %}
+                          {% set ns.result = ns.result + [name_map[p]] %}
+                        {% endif %}
+                      {% endfor %}
+                      {{ ns.result }}
+                - if:
+                    - condition: template
+                      value_template: "{{ names | length > 0 }}"
+                  then:
+                    - variables:
+                        hour: "{{ now().hour }}"
+                        salutation: >-
+                          {% if hour < 12 %}Good morning
+                          {% elif hour < 18 %}Good afternoon
+                          {% else %}Good evening{% endif %}
+                        name_list: >-
+                          {{ names | join(' and ') }}
+                        greeting: "{{ salutation }} {{ name_list }}. Welcome home."
+                    - delay:
+                        seconds: 4
+                    - action: tts.cloud_say
+                      data:
+                        entity_id: media_player.basement_nest_home_mini
+                        message: "{{ greeting }}"
+          else:
+            # door closed — close chime when disarmed or armed_home
+            - if:
+                - condition: template
+                  value_template: "{{ alarm_state in ['armed_home', 'disarmed'] }}"
+              then:
+                - action: media_player.play_media
+                  data:
+                    entity_id: media_player.living_room_homepod
+                    media_content_id: media-source://media_source/local/audio/close.wav
+                    media_content_type: music

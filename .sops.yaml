@@ -1,0 +1,9 @@
+creation_rules:
+  - path_regex: config/secrets\.sops\.yaml$
+    encrypted_regex: ^(password|token|api_key|secret|alarm_pin|latitude|longitude|elevation|timezone|mqtt_user|mqtt_password|healthcheck_ping_url|ntfy_url|ntfy_token|tailscale_webhook_id)$
+    age: age1knwqsjn4pf8fq93dqvnhehm3m22q8zdhxq8vwf5dtzf6a8dpm9fs4q32wx
+  - path_regex: esphome/secrets\.sops\.yaml$
+    encrypted_regex: ^(password|token|api_key|secret|wifi_ssid|wifi_password|ota_password|ap_password)$
+    age: age1knwqsjn4pf8fq93dqvnhehm3m22q8zdhxq8vwf5dtzf6a8dpm9fs4q32wx
+  - path_regex: zigbee2mqtt/secrets\.sops\.yaml$
+    age: age1knwqsjn4pf8fq93dqvnhehm3m22q8zdhxq8vwf5dtzf6a8dpm9fs4q32wx

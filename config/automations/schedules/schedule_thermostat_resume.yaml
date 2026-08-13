@@ -1,0 +1,15 @@
+- id: schedule_thermostat_resume
+  alias: Resume Thermostat Programming
+  trigger:
+    - trigger: time_pattern
+      hours: "/4"
+  condition:
+    - condition: state
+      entity_id: alarm_control_panel.ha_alarm
+      state:
+        - disarmed
+        - armed_home
+  action:
+    - action: script.turn_on
+      target:
+        entity_id: script.resume_thermostat_programming

@@ -1,0 +1,113 @@
+- id: turn_on_garage_lights
+  alias: Turn On Garage Lights
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.motion_garage
+      to: "on"
+      id: motion
+    - trigger: state
+      entity_id: binary_sensor.garage_door_sensor_magnet_contact
+      to: "on"
+      id: interior_door
+    - trigger: state
+      entity_id: cover.garage_door
+      to: opening
+      id: garage_door
+  action:
+    - action: light.turn_on
+      target:
+        entity_id: light.garage_main_lights
+    - if:
+        - condition: trigger
+          id: garage_door
+        - condition: sun
+          after: sunset
+          before: sunrise
+      then:
+        - action: light.turn_on
+          target:
+            entity_id: light.outside_garage_light
+
+- id: turn_off_garage_main_light
+  alias: Turn Off Garage Main Light
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.motion_garage
+      to: "off"
+      for:
+        minutes: 5
+      id: motion
+    - trigger: state
+      entity_id: light.garage_main_lights
+      to: "on"
+      for:
+        minutes: 5
+      id: fallback
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.garage_main_lights
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.garage_main_lights.last_changed).total_seconds() >= 300 }}
+    - condition: state
+      entity_id: cover.garage_door
+      state: closed
+    - condition: state
+      entity_id: binary_sensor.garage_door_sensor_magnet_contact
+      state: "off"
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.garage_main_lights (on for
+              {{ ((now() - states.light.garage_main_lights.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.garage_main_lights
+    - action: light.turn_off
+      target:
+        entity_id: light.garage_main_lights
+
+- id: turn_off_outside_garage_light
+  alias: Turn Off Outside Garage Light
+  trigger:
+    - trigger: state
+      entity_id: light.outside_garage_light
+      to: "on"
+      for:
+        minutes: 5
+      id: fallback
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.outside_garage_light
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.outside_garage_light.last_changed).total_seconds() >= 300 }}
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.outside_garage_light (on for
+              {{ ((now() - states.light.outside_garage_light.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.outside_garage_light
+    - action: light.turn_off
+      target:
+        entity_id: light.outside_garage_light

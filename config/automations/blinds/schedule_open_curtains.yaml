@@ -1,0 +1,33 @@
+- id: schedule_open_curtains
+  alias: Open Curtains After Alarm
+  mode: single
+  trigger:
+    - trigger: event
+      event_type: shortcut_event
+      event_data:
+        event: wake_up_alarm
+  condition:
+    - condition: state
+      entity_id: person.jackson
+      state: home
+    - condition: template
+      value_template: >-
+        {{ this.attributes.last_triggered is none or
+           this.attributes.last_triggered | as_datetime | as_local < now().replace(hour=0, minute=0, second=0, microsecond=0) }}
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+  action:
+    - delay:
+        minutes: 15
+    - condition: numeric_state
+      entity_id: cover.master_bedroom_curtains
+      attribute: current_position
+      below: 21
+    - action: cover.open_cover
+      target:
+        entity_id: cover.master_bedroom_curtains

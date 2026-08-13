@@ -1,0 +1,34 @@
+views:
+  - title: Alarm
+    path: alarm
+    icon: mdi:shield-account
+    panel: true
+    kiosk_mode:
+      hide_header: true
+      hide_sidebar: true
+    cards:
+      - type: alarm-panel
+        entity: alarm_control_panel.ha_alarm
+        states:
+          - arm_home
+          - arm_away
+        card_mod:
+          style: |
+            ha-card {
+              height: 100vh; /* Use entire viewport height */
+              box-shadow: none;
+              border: none;
+              margin: 0;
+              padding: 0;
+            }
+            #root, .content {
+              max-width: none !important; /* remove HA's 600px limit */
+            }
+            .keypad mwc-button {
+              width: 100px !important;
+              height: 100px !important;
+              font-size: 3rem !important;
+            }
+            mwc-button {
+              font-size: 1.6rem !important;
+            }

@@ -1,0 +1,100 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "config/**"
+      - ".yamllint.yaml"
+      - ".github/workflows/validate.yaml"
+      - ".github/workflows/mock-secrets-config.json"
+  pull_request:
+    paths:
+      - "config/**"
+      - ".yamllint.yaml"
+      - ".github/workflows/validate.yaml"
+      - ".github/workflows/mock-secrets-config.json"
+  workflow_dispatch:
+
+jobs:
+  yamllint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: frenck/action-yamllint@34b4bbcaeabedcfefad6adea8c5bbc42af0e2d47  # v1
+
+  check-config:
+    name: Home Assistant Config Check
+    runs-on: ubuntu-latest
+    needs: yamllint
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: golles/mock-yaml-secrets-action@d6c5dcb9889077e44827c50e5f6bdac3636c89e5  # v1
+        with:
+          configFile: .github/workflows/mock-secrets-config.json
+
+      - name: Get cache key (week)
+        id: week
+        run: echo "week=$(date +%Y-%W)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Home Assistant Docker image
+        id: docker-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6
+        with:
+          path: /tmp/ha-image.tar
+          key: ha-dockerhub-${{ steps.week.outputs.week }}
+          restore-keys: ha-dockerhub-
+
+      - name: Load cached Docker image
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: docker load < /tmp/ha-image.tar
+
+      - name: Pull and save Docker image
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          docker pull -q "homeassistant/home-assistant:stable"
+          docker save "homeassistant/home-assistant:stable" > /tmp/ha-image.tar
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8  # v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Wait for Tailscale connectivity
+        run: tailscale ping --until-direct=false -c 3 ${{ vars.HA_TAILSCALE_HOST }}
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@6b84f2e793b32fa0b03a379cadadec75cc539391  # v2
+        with:
+          key: ${{ secrets.HA_SSH_PRIVATE_KEY }}
+          known_hosts: unnecessary
+
+      - name: Add HA to known_hosts
+        run: ssh-keyscan -H ${{ vars.HA_TAILSCALE_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Fetch device registry from HA
+        run: |
+          mkdir -p config/.storage
+          scp root@${{ vars.HA_TAILSCALE_HOST }}:/config/.storage/core.device_registry \
+            config/.storage/core.device_registry
+
+      - name: Check Home Assistant config
+        run: |
+          output=$(docker run --rm \
+            --entrypoint "" \
+            -v "$(pwd):/github/workspace" \
+            --workdir /github/workspace \
+            "homeassistant/home-assistant:stable" \
+            bash -c "mkdir -p /config/snapshots /config/www && python -m homeassistant --config ./config --script check_config" 2>&1)
+          echo "$output"
+          unexpected=$(echo "$output" | grep "^ERROR" || true)
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected errors found in config check:"
+            echo "$unexpected"
+            exit 1
+          fi

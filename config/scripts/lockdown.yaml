@@ -1,0 +1,193 @@
+lock_down:
+  alias: Lock Down
+  icon: mdi:lock
+  mode: single
+  fields:
+    source:
+      description: What triggered the lockdown (geofence, schedule, notification)
+      example: geofence
+  sequence:
+    - variables:
+        prefix: >-
+          {% set prefix_map = {
+            'geofence': 'Goodbye',
+            'schedule': 'Good Night',
+            'notification': 'Notification Lockdown',
+            'bed': 'Sweet Dreams!'
+          } %}
+          {{ prefix_map.get(source, 'Good Night') }}
+
+    # Close garage door if open
+    - if:
+        - condition: state
+          entity_id: cover.garage_door
+          state: open
+      then:
+        - action: cover.close_cover
+          target:
+            entity_id: cover.garage_door
+
+    # Lock doors if unlocked (fire-and-forget so a lock timeout can't abort the lockdown)
+    - if:
+        - condition: state
+          entity_id: lock.front_door
+          state: unlocked
+      then:
+        - action: script.turn_on
+          target:
+            entity_id: script.set_lock
+          data:
+            variables:
+              lock_entity: lock.front_door
+              operation: lock
+    - if:
+        - condition: state
+          entity_id: lock.garage_door
+          state: unlocked
+      then:
+        - action: script.turn_on
+          target:
+            entity_id: script.set_lock
+          data:
+            variables:
+              lock_entity: lock.garage_door
+              operation: lock
+
+    # Close blinds if any are open
+    - if:
+        - condition: or
+          conditions:
+            - condition: not
+              conditions:
+                - condition: state
+                  entity_id: cover.living_room_living_room_shade_1
+                  state: closed
+            - condition: not
+              conditions:
+                - condition: state
+                  entity_id: cover.living_room_living_room_shade_2
+                  state: closed
+            - condition: not
+              conditions:
+                - condition: state
+                  entity_id: cover.living_room_living_room_shade_3
+                  state: closed
+            - condition: not
+              conditions:
+                - condition: state
+                  entity_id: cover.dining_room_dining_room_shade_1
+                  state: closed
+            - condition: not
+              conditions:
+                - condition: state
+                  entity_id: cover.dining_room_dining_room_shade_2
+                  state: closed
+            - condition: not
+              conditions:
+                - condition: state
+                  entity_id: cover.office_shade
+                  state: closed
+            - condition: not
+              conditions:
+                - condition: state
+                  entity_id: cover.master_bedroom_master_shade
+                  state: closed
+      then:
+        - action: scene.turn_on
+          target:
+            entity_id: scene.close_all
+
+    # Turn off lights (unconditional)
+    - action: light.turn_off
+      target:
+        entity_id:
+          - light.basement_lights
+          - light.garage_lights
+          - light.laundry_room_light
+          - light.master_closet_lights
+          - light.office_lights
+          - light.upstairs_hallway
+          - light.utility_room_light
+
+    # Turn off fans
+    - action: fan.turn_off
+      target:
+        entity_id:
+          - fan.basement_fan
+          - fan.guest_bedroom_bathroom_fan
+          - fan.living_room_fan
+          - fan.main_floor_bathroom_fan
+
+    # Turn off guest/main floor lights and smart plug if guest override is off
+    - if:
+        - condition: state
+          entity_id: input_boolean.guest_override
+          state: "off"
+      then:
+        - action: light.turn_off
+          target:
+            entity_id:
+              - light.guest_bedroom_lights
+              - light.main_floor_lights
+        - action: switch.turn_off
+          target:
+            entity_id: switch.living_room_smart_plug
+
+    # Turn off master bedroom light and fan only when nobody is home
+    - if:
+        - condition: state
+          entity_id: binary_sensor.is_somebody_home
+          state: "off"
+      then:
+        - action: light.turn_off
+          target:
+            entity_id: light.master_bedroom
+        - action: fan.turn_off
+          target:
+            entity_id: fan.master_bedroom_ceiling_fan
+
+    # Take garage camera snapshot
+    - action: camera.snapshot
+      target:
+        entity_id: camera.garage
+      data:
+        filename: /config/www/snapshot_garage.jpg
+
+    # Give locks time to report locked before building the status report;
+    # an unlocked lock in the notification signals the command failed
+    - wait_template: >-
+        {{ is_state('lock.front_door', 'locked') and is_state('lock.garage_door', 'locked') }}
+      timeout: "00:00:30"
+      continue_on_timeout: true
+
+    # Build status variables for notification
+    - variables:
+        front_lock: "{{ states('lock.front_door') }}"
+        garage_lock: "{{ states('lock.garage_door') }}"
+        garage_door: "{{ states('cover.garage_door') }}"
+        blinds_status: >-
+          {% if is_state('cover.living_room_living_room_shade_1', 'closed') %}closed{% else %}open{% endif %}
+
+    # Notify both phones
+    - action: notify.mobile_app_jacksons_iphone
+      data:
+        title: "{{ prefix }} - Locking House Up"
+        message: >-
+          Front Door {{ front_lock }}
+          Garage Door Lock {{ garage_lock }}
+          Garage Door {{ garage_door }}
+          Blinds {{ blinds_status }}
+        data:
+          image: /local/snapshot_garage.jpg
+          tag: lockdown
+    - action: notify.mobile_app_noops
+      data:
+        title: "{{ prefix }} - Locking House Up"
+        message: >-
+          Front Door {{ front_lock }}
+          Garage Door Lock {{ garage_lock }}
+          Garage Door {{ garage_door }}
+          Blinds {{ blinds_status }}
+        data:
+          image: /local/snapshot_garage.jpg
+          tag: lockdown

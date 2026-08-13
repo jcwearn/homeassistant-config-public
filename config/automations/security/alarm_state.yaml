@@ -1,0 +1,212 @@
+- id: security_alarm_pending
+  alias: Alarm - Pending
+  trigger:
+    - trigger: state
+      entity_id: alarm_control_panel.ha_alarm
+      to: pending
+  action:
+    - action: tts.cloud_say
+      data:
+        entity_id: media_player.all_speakers
+        message: An alarm will trigger in 10 seconds.
+
+- id: security_alarm_arming
+  alias: Alarm - Arming
+  trigger:
+    - trigger: state
+      entity_id: alarm_control_panel.ha_alarm
+      to: arming
+  action:
+    # TTS only when arming to armed_away
+    - if:
+        - condition: template
+          value_template: "{{ state_attr('alarm_control_panel.ha_alarm', 'next_state') == 'armed_away' }}"
+      then:
+        - action: tts.cloud_say
+          data:
+            entity_id: media_player.all_speakers
+            message: Alarm System arming. Two minutes until it is armed.
+    # Check if any doors are left open
+    - if:
+        - condition: state
+          entity_id: binary_sensor.door_left_open
+          state: "on"
+      then:
+        - action: notify.mobile_app_jacksons_iphone
+          data:
+            title: Door Open While Arming
+            message: >-
+              The following door(s) left open:
+              {{ state_attr('binary_sensor.door_left_open', 'open_doors') | join(', ') }}
+
+- id: security_alarm_armed_home
+  alias: Alarm - Armed Home
+  trigger:
+    - trigger: state
+      entity_id: alarm_control_panel.ha_alarm
+      to: armed_home
+  action:
+    - action: select.select_option
+      target:
+        entity_id:
+          - select.g4_instant_recording_mode
+          - select.g4_instant_recording_mode_2
+      data:
+        option: always
+    - action: select.select_option
+      target:
+        entity_id: select.camera_g4_instant_main_floor_infrared_mode
+      data:
+        option: auto
+
+- id: security_alarm_armed_away
+  alias: Alarm - Armed Away
+  trigger:
+    - trigger: state
+      entity_id: alarm_control_panel.ha_alarm
+      to: armed_away
+  action:
+    - action: tts.cloud_say
+      data:
+        entity_id: media_player.all_speakers
+        message: Alarm System armed.
+    - action: select.select_option
+      target:
+        entity_id:
+          - select.g4_instant_recording_mode
+          - select.g4_instant_recording_mode_2
+      data:
+        option: always
+    - action: select.select_option
+      target:
+        entity_id: select.camera_g4_instant_main_floor_infrared_mode
+      data:
+        option: auto
+
+- id: security_alarm_triggered
+  alias: Alarm - Triggered
+  mode: single
+  trigger:
+    - trigger: state
+      entity_id: alarm_control_panel.ha_alarm
+      to: triggered
+  action:
+    - parallel:
+        # Branch 1: Alarm sound loop
+        - sequence:
+            - action: media_player.volume_set
+              target:
+                entity_id: media_player.all_speakers
+              data:
+                volume_level: 1
+            - repeat:
+                while:
+                  - condition: state
+                    entity_id: alarm_control_panel.ha_alarm
+                    state: triggered
+                sequence:
+                  - action: media_player.play_media
+                    data:
+                      entity_id: media_player.all_speakers
+                      media_content_id: /media/local/audio/alarm.mp3
+                      media_content_type: music
+                  - delay:
+                      seconds: 10
+        # Branch 2: TTS critical + push notifications
+        - sequence:
+            - action: notify.mobile_app_jacksons_iphone
+              data:
+                message: TTS
+                title: Alert. The House Alarm has been Triggered. Alert. The House Alarm has been Triggered.
+                data:
+                  ttl: 0
+                  priority: high
+                  channel: alarm_stream_max
+            - action: notify.mobile_app_jacksons_iphone
+              data:
+                title: Alarm Triggered
+                message: The Alarm has been triggered
+                data:
+                  clickAction: "app://com.ubnt.unifi.protect"
+                  actions:
+                    - action: LOCK_DOWN
+                      title: Lock Down
+                    - action: DISARM
+                      title: Disarm
+            - action: notify.mobile_app_noops
+              data:
+                title: Alarm Triggered
+                message: The Alarm has been triggered
+                data:
+                  clickAction: "app://com.ubnt.unifi.protect"
+                  actions:
+                    - action: LOCK_DOWN
+                      title: Lock Down
+                    - action: DISARM
+                      title: Disarm
+        # Branch 3: Open blinds + cameras always recording
+        - sequence:
+            - action: script.open_blinds
+            - action: select.select_option
+              target:
+                entity_id:
+                  - select.g4_instant_recording_mode
+                  - select.g4_instant_recording_mode_2
+              data:
+                option: always
+
+- id: security_alarm_disarmed
+  alias: Alarm - Disarmed
+  trigger:
+    - trigger: state
+      entity_id: alarm_control_panel.ha_alarm
+      to: disarmed
+  action:
+    # Save previous alarm state for welcome home greeting guard
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.alarm_previous_state
+      data:
+        value: "{{ trigger.from_state.state }}"
+    # Enable home mode
+    - action: script.turn_on
+      target:
+        entity_id: script.enable_home_mode
+    # TTS announcement (only when disarming from an armed/triggered state)
+    - if:
+        - condition: template
+          value_template: >-
+            {{ trigger.from_state.state not in ['disarmed', 'armed_home'] }}
+      then:
+        - action: tts.cloud_say
+          data:
+            entity_id: media_player.all_speakers
+            message: Alarm System Disarmed
+    # Stop camera recording
+    - action: select.select_option
+      target:
+        entity_id:
+          - select.g4_instant_recording_mode
+          - select.g4_instant_recording_mode_2
+      data:
+        option: never
+    - action: select.select_option
+      target:
+        entity_id: select.camera_g4_instant_main_floor_infrared_mode
+      data:
+        option: "off"
+    # Stop alarm audio and reset volume (only if alarm.mp3 is currently playing)
+    - if:
+        - condition: template
+          value_template: >-
+            {{ states('media_player.all_speakers') == 'playing' and
+               'alarm.mp3' in (state_attr('media_player.all_speakers', 'media_content_id') | string) }}
+      then:
+        - action: media_player.media_stop
+          target:
+            entity_id: media_player.all_speakers
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.all_speakers
+          data:
+            volume_level: 0.5

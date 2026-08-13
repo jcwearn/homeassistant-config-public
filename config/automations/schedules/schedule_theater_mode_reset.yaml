@@ -1,0 +1,10 @@
+- id: schedule_theater_mode_reset
+  alias: Theater Mode - Nightly Reset at 4 AM
+  mode: single
+  trigger:
+    - trigger: time
+      at: "04:00:00"
+  action:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.theater_mode

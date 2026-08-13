@@ -1,0 +1,55 @@
+# rsync exclude patterns for the public snapshot published to
+# jcwearn/homeassistant-config-public. See .github/workflows/publish.yaml.
+#
+# actions/checkout only materializes tracked files, so anything already in
+# .gitignore will not be present in CI anyway. Listing those paths here as well
+# is deliberate: it keeps the filter correct when run locally against a dirty
+# working tree, and it still holds if one of these is accidentally committed.
+#
+# These are rsync filter rules, not gitignore rules. A trailing / matches
+# directories only.
+
+# VCS and publish-only files
+.git/
+.github/public-README.md
+
+# Agent / editor state
+.claude/
+.vscode/
+.idea/
+.DS_Store
+
+# Decrypted secrets. The SOPS-encrypted *.sops.yaml counterparts are published
+# on purpose -- these patterns deliberately do not match them.
+secrets.yaml
+*.rendered.yaml
+
+# HA runtime data. core.device_registry in particular carries MAC addresses,
+# serial numbers, and the area layout of the house.
+config/.storage/
+config/*.db
+config/*.db-shm
+config/*.db-wal
+config/*.log
+config/backups/
+config/tts/
+config/deps/
+config/www/
+config/.cloud/
+
+# Node-RED export -- contains plaintext AWS credentials
+flows.json
+
+# Local export data and pre-migration config
+.export/
+legacy-config/
+
+# Zigbee2MQTT runtime
+zigbee2mqtt/log/
+zigbee2mqtt/state.json
+zigbee2mqtt/database.db
+zigbee2mqtt/coordinator_backup.json
+
+# Build artifacts
+__pycache__/
+esphome/.esphome/

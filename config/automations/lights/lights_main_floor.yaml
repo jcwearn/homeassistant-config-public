@@ -1,0 +1,55 @@
+- id: turn_on_main_floor_lights_motion
+  alias: Turn On Main Floor Lights - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.main_floor_stairwell_motion
+      to: "on"
+  condition:
+    - condition: template
+      value_template: >-
+        {{ is_state('binary_sensor.basement_stairwell_motion', 'off') or
+           (now() - states.binary_sensor.basement_stairwell_motion.last_changed).total_seconds() > 1 }}
+    - condition: state
+      entity_id: sun.sun
+      state: below_horizon
+    - condition: state
+      entity_id: group.main_floor_lights
+      state: "off"
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: media_player.living_room
+          state: playing
+  action:
+    - action: scene.turn_on
+      target:
+        entity_id: scene.downstairs_relax
+
+- id: turn_on_upstairs_hallway_stairwell_motion
+  alias: Turn On Upstairs Hallway Light - Stairwell Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.main_floor_stairwell_motion
+      to: "on"
+  condition:
+    - condition: template
+      value_template: >-
+        {{ is_state('binary_sensor.basement_stairwell_motion', 'off') or
+           (now() - states.binary_sensor.basement_stairwell_motion.last_changed).total_seconds() > 1 }}
+    - condition: numeric_state
+      entity_id: sensor.main_floor_stairwell_sensor_motion_02_illuminance
+      below: 40
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_either
+              state: "on"
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.upstairs_hallway_nightlight
+      default:
+        - action: scene.turn_on
+          target:
+            entity_id: scene.upstairs_hallway_relax

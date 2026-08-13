@@ -1,0 +1,32 @@
+- id: notifications_door_left_open
+  alias: Notifications - Door Left Open
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.front_door_sensor_magnet_contact
+      to: "on"
+      for:
+        minutes: 5
+      id: front
+    - trigger: state
+      entity_id: binary_sensor.garage_door_sensor_magnet_contact
+      to: "on"
+      for:
+        minutes: 5
+      id: garage
+    - trigger: state
+      entity_id: binary_sensor.roof_door_sensor_magnet_contact
+      to: "on"
+      for:
+        minutes: 5
+      id: roof
+  action:
+    - variables:
+        door_name: >-
+          {% set names = {'front': 'Front', 'garage': 'Garage', 'roof': 'Roof'} %}
+          {{ names[trigger.id] }}
+    - action: notify.mobile_app_jacksons_iphone
+      data:
+        title: Door left open
+        message: "{{ door_name }} door has been open for 5 minutes"
+        data:
+          tag: door-left-open

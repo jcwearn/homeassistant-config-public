@@ -1,0 +1,63 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "config/**"
+      - "scripts/deploy.sh"
+      - ".github/workflows/deploy.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Home Assistant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Install SOPS
+        run: |
+          SOPS_VERSION="3.10.2"
+          curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64" -o /usr/local/bin/sops
+          echo "79b0f844237bd4b0446e4dc884dbc1765fc7dedc3968f743d5949c6f2e701739  /usr/local/bin/sops" | sha256sum -c -
+          chmod +x /usr/local/bin/sops
+          sops --version
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8  # v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Wait for Tailscale connectivity
+        run: tailscale ping --until-direct=false -c 3 ${{ vars.HA_TAILSCALE_HOST }}
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@6b84f2e793b32fa0b03a379cadadec75cc539391  # v2
+        with:
+          key: ${{ secrets.HA_SSH_PRIVATE_KEY }}
+          known_hosts: unnecessary
+
+      - name: Add HA to known_hosts
+        run: ssh-keyscan -H ${{ vars.HA_TAILSCALE_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Write age key
+        run: |
+          mkdir -p ~/.age
+          echo "${{ secrets.SOPS_AGE_KEY }}" > ~/.age/homeassistant.key
+          chmod 600 ~/.age/homeassistant.key
+
+      - name: Deploy
+        env:
+          HA_SSH_HOST: ${{ vars.HA_TAILSCALE_HOST }}
+          HA_SSH_USER: root
+          HA_CONFIG_DIR: /config
+          SOPS_AGE_KEY_FILE: /home/runner/.age/homeassistant.key
+        run: ./scripts/deploy.sh

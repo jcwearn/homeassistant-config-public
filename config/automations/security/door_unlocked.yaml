@@ -1,0 +1,26 @@
+- id: security_door_unlocked
+  alias: Door Unlocked - Enable Home Mode
+  trigger:
+    - trigger: state
+      entity_id: lock.front_door
+      to: unlocked
+    - trigger: state
+      entity_id: lock.garage_door
+      to: unlocked
+  condition:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: alarm_control_panel.ha_alarm
+          state: disarmed
+    - condition: template
+      value_template: >-
+        {{ state_attr('automation.geofence_arriving_home', 'last_triggered') is none
+           or (now() - state_attr('automation.geofence_arriving_home', 'last_triggered')).total_seconds() > 60 }}
+  action:
+    - action: script.turn_on
+      target:
+        entity_id: script.enable_home_mode
+      data:
+        variables:
+          source: manual_unlock

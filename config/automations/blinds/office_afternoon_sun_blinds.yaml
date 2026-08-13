@@ -1,0 +1,30 @@
+- id: office_afternoon_sun_blinds
+  alias: Office Afternoon Sun Blinds
+  trigger:
+    - trigger: time_pattern
+      minutes: /15
+    - trigger: state
+      entity_id: binary_sensor.office_presence
+      to: "on"
+  condition:
+    - condition: template
+      value_template: "{{ false }}"
+    - condition: state
+      entity_id: binary_sensor.office_presence
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ state_attr('sun.sun', 'azimuth') | float(0) > 160
+           and state_attr('sun.sun', 'azimuth') | float(0) < 290 }}
+    - condition: template
+      value_template: >-
+        {{ state_attr('sun.sun', 'elevation') | float(0) > 3 }}
+  action:
+    - variables:
+        elevation: "{{ state_attr('sun.sun', 'elevation') | float(0) }}"
+        target_position: "{{ [[elevation * 2, 10] | max, 70] | min | int }}"
+    - action: cover.set_cover_position
+      target:
+        entity_id: cover.office_shade
+      data:
+        position: "{{ target_position }}"

@@ -1,0 +1,194 @@
+light:
+  - platform: group
+    unique_id: main_floor_lights
+    name: Main Floor Lights
+    entities:
+      - light.downstairs
+      - light.dining_room_light
+      - light.kitchen_under_cabinet
+      - light.main_floor_bathroom_lights
+  - platform: group
+    unique_id: main_floor_ambient_lights
+    name: Main Floor Ambient Lights
+    entities:
+      - light.living_room
+      - light.kitchen
+      - light.stairwell
+  - platform: group
+    unique_id: main_floor_lights_without_bathroom
+    name: Main Floor Lights Without Bathroom
+    entities:
+      - light.downstairs
+      - light.dining_room_light
+      - light.kitchen_under_cabinet
+  - platform: group
+    unique_id: basement_lights
+    name: Basement Lights
+    entities:
+      - light.basement_hallway
+      - light.basement_stairwell_lights
+  - platform: group
+    unique_id: upstairs_lights
+    name: Upstairs Lights
+    entities:
+      - light.master_bedroom
+      - light.master_closet_lights
+      - light.upstairs_hallway
+      - light.office_ceiling_fan_light
+      - light.office_bathroom_lights
+      - light.office_closet_lights
+      - light.laundry_room_light
+  - platform: group
+    unique_id: kitchen_lights
+    name: Kitchen Lights
+    entities:
+      - light.kitchen
+      - light.kitchen_under_cabinet
+  - platform: group
+    unique_id: master_lights
+    name: Master Lights
+    entities:
+      - light.master_bedroom
+      - light.master_closet_lights
+  - platform: group
+    unique_id: garage_lights
+    name: Garage Lights
+    entities:
+      - light.garage_main_lights
+      - light.garage_wall_lights
+      - light.utility_room_light
+  - platform: group
+    unique_id: office_lights
+    name: Office Lights
+    entities:
+      - light.office_ceiling_fan_light
+      - light.office_bathroom_lights
+      - light.office_closet_lights
+  - platform: group
+    unique_id: guest_bedroom_lights
+    name: Guest Bedroom Lights
+    entities:
+      - light.guest_bedroom_bathroom_lights
+      - light.guest_room
+
+cover:
+  - platform: group
+    unique_id: living_room_shades
+    name: Living Room Shades
+    entities:
+      - cover.living_room_living_room_shade_1
+      - cover.living_room_living_room_shade_2
+      - cover.living_room_living_room_shade_3
+  - platform: group
+    unique_id: dining_room_shades
+    name: Dining Room Shades
+    entities:
+      - cover.dining_room_dining_room_shade_1
+      - cover.dining_room_dining_room_shade_2
+  - platform: group
+    unique_id: master_bedroom_curtain
+    name: Master Bedroom Curtains
+    entities:
+      - cover.master_bedroom_curtain_left
+      - cover.master_bedroom_curtain_right
+
+binary_sensor:
+  - platform: group
+    unique_id: basement_stairwell_motion
+    name: Basement Stairwell Motion
+    device_class: motion
+    entities:
+      - binary_sensor.basement_stairwell_sensor_motion_01_occupancy
+      - binary_sensor.basement_stairwell_sensor_motion_02_occupancy
+  - platform: group
+    unique_id: main_floor_stairwell_motion
+    name: Main Floor Stairwell Motion
+    device_class: motion
+    entities:
+      - binary_sensor.main_floor_stairwell_sensor_motion_01_occupancy
+      - binary_sensor.main_floor_stairwell_sensor_motion_02_occupancy
+  - platform: group
+    unique_id: basement_motion
+    name: Basement Motion
+    device_class: motion
+    entities:
+      - binary_sensor.motion_g4_doorbell
+      - binary_sensor.motion_garage
+  - platform: group
+    unique_id: basement_doors
+    name: Basement Doors
+    device_class: door
+    entities:
+      - binary_sensor.garage_door_sensor_magnet_contact
+      - binary_sensor.front_door_sensor_magnet_contact
+  - platform: group
+    unique_id: upstairs_motion
+    name: Upstairs Motion
+    device_class: motion
+    entities:
+      - binary_sensor.master_bedroom_closet_sensor_motion_occupancy
+      - binary_sensor.master_bedroom_sensor_motion_occupancy
+      - binary_sensor.office_sensor_motion_occupancy
+  - platform: group
+    unique_id: master_motion
+    name: Master Motion
+    device_class: motion
+    entities:
+      - binary_sensor.master_bedroom_closet_sensor_motion_occupancy
+      - binary_sensor.master_bedroom_sensor_motion_occupancy
+  - platform: group
+    unique_id: pantry_contact
+    name: Pantry Contact
+    device_class: door
+    entities:
+      - binary_sensor.pantry_door_sensor_magnet_left_contact
+      - binary_sensor.pantry_door_sensor_magnet_right_contact
+
+group:
+  living_room_media:
+    name: Living Room Media
+    icon: mdi:cast
+    entities:
+      - media_player.living_room
+      - media_player.lg_webos_smart_tv
+      - media_player.living_room_nest_home_mini
+  living_room_lights:
+    name: Living Room Lights
+    icon: mdi:lightbulb-group
+    entities:
+      - light.living_room
+      - light.living_room_ceiling_lights
+      - light.corner_light
+  kitchen_lights:
+    name: Kitchen Lights
+    icon: mdi:lightbulb-group
+    entities:
+      - light.kitchen
+      - light.kitchen_ceiling_lights
+      - light.kitchen_hanging_lights
+      - light.kitchen_under_cabinet
+  master_bedroom_lights:
+    name: Master Bedroom Lights
+    icon: mdi:lightbulb-group
+    entities:
+      - light.master_bedroom_ceiling_lights
+      - light.master_bedroom_nightstands
+      - light.master_closet_lights
+  main_floor_lights:
+    name: Main Floor Lights
+    icon: mdi:lightbulb-group
+    entities:
+      - light.downstairs
+      - light.dining_room_light
+      - light.kitchen_under_cabinet
+      - light.main_floor_bathroom_lights
+  office_devices:
+    name: Office Devices
+    entities:
+      - switch.office_smart_plug
+      - sensor.peloton_priceatronic
+  master_bedroom_motion:
+    name: Master Bedroom Motion
+    entities:
+      - binary_sensor.master_bedroom_sensor_motion_occupancy
+      - binary_sensor.master_bedroom_closet_sensor_motion_occupancy

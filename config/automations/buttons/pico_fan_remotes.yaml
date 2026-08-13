@@ -1,0 +1,160 @@
+- id: pico_living_room_fan
+  alias: Pico Living Room Fan Remote
+  trigger:
+    - trigger: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        device_id: 4a00e6f8eb2f412a4d45c16c3b978617
+        action: press
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'on' }}"
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.living_room_fan
+              data:
+                percentage: 100
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'raise' }}"
+          sequence:
+            - action: fan.increase_speed
+              target:
+                entity_id: fan.living_room_fan
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'stop' }}"
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.living_room_fan
+              data:
+                percentage: 50
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'lower' }}"
+          sequence:
+            - action: fan.decrease_speed
+              target:
+                entity_id: fan.living_room_fan
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'off' }}"
+          sequence:
+            - action: fan.turn_off
+              target:
+                entity_id: fan.living_room_fan
+
+- id: pico_office_fan
+  alias: Pico Office Fan Remote
+  mode: restart
+  trigger:
+    - trigger: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        device_id: 759743e20a27627aebeb1b6c3603ca44
+        action: release
+  action:
+    - if:
+        - condition: state
+          entity_id: light.office_ceiling_fan_light
+          state: "off"
+      then:
+        - action: light.turn_on
+          target:
+            entity_id: light.office_ceiling_fan_light
+        - delay:
+            milliseconds: 500
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'on' }}"
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.office_fan
+              data:
+                percentage: 100
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'raise' }}"
+          sequence:
+            - action: fan.increase_speed
+              target:
+                entity_id: fan.office_fan
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'stop' }}"
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.office_fan
+              data:
+                percentage: 66
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'lower' }}"
+          sequence:
+            - action: fan.decrease_speed
+              target:
+                entity_id: fan.office_fan
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'off' }}"
+          sequence:
+            - action: fan.turn_off
+              target:
+                entity_id: fan.office_fan
+
+- id: pico_basement_fan
+  alias: Pico Basement Fan Remote
+  trigger:
+    - trigger: event
+      event_type: lutron_caseta_button_event
+      event_data:
+        device_id: 9ab0ffc6302ff9a606b8e145b48e77d4
+        action: press
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'on' }}"
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.basement_fan
+              data:
+                percentage: 100
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'raise' }}"
+          sequence:
+            - action: fan.increase_speed
+              target:
+                entity_id: fan.basement_fan
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'stop' }}"
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.basement_fan
+              data:
+                percentage: 66
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'lower' }}"
+          sequence:
+            - action: fan.decrease_speed
+              target:
+                entity_id: fan.basement_fan
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.button_type == 'off' }}"
+          sequence:
+            - action: fan.turn_off
+              target:
+                entity_id: fan.basement_fan

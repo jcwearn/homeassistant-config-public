@@ -1,0 +1,16 @@
+- id: schedule_nightly_lockdown
+  alias: Nightly Lockdown
+  trigger:
+    - trigger: time
+      at: "21:30:00"
+  condition:
+    - condition: state
+      entity_id: alarm_control_panel.ha_alarm
+      state: armed_away
+  action:
+    - action: script.turn_on
+      target:
+        entity_id: script.lock_down
+      data:
+        variables:
+          source: schedule

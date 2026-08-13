@@ -1,0 +1,72 @@
+- id: security_garage_opened_while_away
+  alias: Garage Opened While Away
+  trigger:
+    - trigger: state
+      entity_id: cover.garage_door
+      to: open
+  condition:
+    - condition: state
+      entity_id: alarm_control_panel.ha_alarm
+      state: armed_away
+  action:
+    # Take snapshot immediately
+    - action: camera.snapshot
+      target:
+        entity_id: camera.garage
+      data:
+        filename: /config/www/snapshot_garage.jpg
+    # Wait 1 minute
+    - delay:
+        minutes: 1
+    # Re-check still armed away
+    - condition: state
+      entity_id: alarm_control_panel.ha_alarm
+      state: armed_away
+    # Notify with snapshot and lock down action
+    - action: notify.mobile_app_jacksons_iphone
+      data:
+        title: Garage Opened
+        message: The garage was opened while you were away
+        data:
+          image: /local/snapshot_garage.jpg
+          clickAction: "app://com.ubnt.unifi.protect"
+          actions:
+            - action: LOCK_DOWN
+              title: Lock Down
+
+- id: security_garage_open_5_minutes
+  alias: Garage Open 5 Minutes
+  trigger:
+    - trigger: state
+      entity_id: cover.garage_door
+      to: open
+      for:
+        minutes: 5
+  action:
+    - choose:
+        # Armed away → close garage automatically
+        - conditions:
+            - condition: state
+              entity_id: alarm_control_panel.ha_alarm
+              state: armed_away
+          sequence:
+            - action: cover.close_cover
+              target:
+                entity_id: cover.garage_door
+      # Not armed away → snapshot + notify
+      default:
+        - action: camera.snapshot
+          target:
+            entity_id: camera.garage
+          data:
+            filename: /config/www/snapshot_garage.jpg
+        - action: notify.mobile_app_jacksons_iphone
+          data:
+            title: Garage Left Open
+            message: The garage has been open for 5 minutes
+            data:
+              image: /local/snapshot_garage.jpg
+              clickAction: "app://com.ubnt.unifi.protect"
+              actions:
+                - action: CLOSE_GARAGE
+                  title: Close Garage

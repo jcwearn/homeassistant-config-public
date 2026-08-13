@@ -1,0 +1,42 @@
+- id: misc_vacuum_cleaning_lights_on
+  alias: Vacuum - Cleaning Away at Night → Lights On
+  mode: single
+  trigger:
+    - trigger: state
+      entity_id: vacuum.roomba_j7
+      to: cleaning
+  condition:
+    - condition: state
+      entity_id: alarm_control_panel.ha_alarm
+      state: armed_away
+    - condition: state
+      entity_id: sun.sun
+      state: below_horizon
+  action:
+    - action: scene.turn_on
+      target:
+        entity_id: scene.downstairs_concentrate
+    - action: light.turn_on
+      target:
+        entity_id:
+          - light.dining_room_light
+          - light.kitchen_under_cabinet
+
+- id: misc_vacuum_docked_lights_off
+  alias: Vacuum - Docked Away at Night → Lights Off
+  mode: single
+  trigger:
+    - trigger: state
+      entity_id: vacuum.roomba_j7
+      to: docked
+  condition:
+    - condition: state
+      entity_id: alarm_control_panel.ha_alarm
+      state: armed_away
+    - condition: state
+      entity_id: sun.sun
+      state: below_horizon
+  action:
+    - action: light.turn_off
+      target:
+        entity_id: light.main_floor_lights

@@ -1,0 +1,18 @@
+- id: misc_iphone_charging_nightstand
+  alias: Nightstand - iPhone Charging → Turn Off Bedroom Lights
+  mode: single
+  trigger:
+    - trigger: state
+      entity_id: sensor.jacksons_iphone_battery_state
+      to: Charging
+  condition:
+    - condition: state
+      entity_id: binary_sensor.master_bedroom_sensor_magnet_contact
+      state: "off"
+  action:
+    - action: light.turn_off
+      target:
+        entity_id:
+          - light.master_bedroom_nightstands
+          - light.master_bedroom_ceiling_lights
+          - light.master_closet_lights

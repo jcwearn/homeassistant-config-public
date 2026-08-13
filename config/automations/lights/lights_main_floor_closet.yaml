@@ -1,0 +1,39 @@
+- id: lights_main_floor_closet_contact
+  alias: Main Floor Closet Light - Contact
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.main_floor_closet_sensor_magnet_contact
+      to: "on"
+      id: door_open
+    - trigger: state
+      entity_id: binary_sensor.main_floor_closet_sensor_magnet_contact
+      to: "off"
+      id: door_closed
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: door_open
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.main_floor_closet_closet_open
+        - conditions:
+            - condition: trigger
+              id: door_closed
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: light.hue_ambiance_downlight_2_2
+                  state: "on"
+              then:
+                - action: light.turn_on
+                  target:
+                    entity_id: light.hue_ambiance_downlight_1_2
+                  data:
+                    brightness: "{{ state_attr('light.hue_ambiance_downlight_2_2', 'brightness') }}"
+                    color_temp_kelvin: "{{ state_attr('light.hue_ambiance_downlight_2_2', 'color_temp_kelvin') }}"
+              else:
+                - action: light.turn_off
+                  target:
+                    entity_id: light.hue_ambiance_downlight_1_2

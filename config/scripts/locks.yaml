@@ -1,0 +1,20 @@
+set_lock:
+  alias: Set Lock (Fire and Forget)
+  icon: mdi:lock-question
+  description: >-
+    Lock/unlock a lock without blocking the caller. Invoke via script.turn_on
+    so lock timeouts (e.g. flaky WiFi) only fail this script's run, never the
+    calling automation.
+  mode: parallel
+  max: 4
+  fields:
+    lock_entity:
+      description: The lock entity to operate
+      example: lock.garage_door
+    operation:
+      description: lock or unlock
+      example: unlock
+  sequence:
+    - action: "lock.{{ operation }}"
+      target:
+        entity_id: "{{ lock_entity }}"

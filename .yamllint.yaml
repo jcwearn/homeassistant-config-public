@@ -1,0 +1,17 @@
+extends: default
+
+ignore:
+  - "config/secrets.sops.yaml"
+  - "zigbee2mqtt/secrets.sops.yaml"
+
+rules:
+  document-start: disable
+  line-length:
+    max: 256
+  indentation:
+    spaces: 2
+  truthy:
+    allowed-values: ["true", "false", "on", "off"]
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1

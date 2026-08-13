@@ -1,0 +1,84 @@
+- id: turn_on_master_bedroom_light_motion
+  alias: Turn On Master Bedroom Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.master_bedroom_sensor_motion_occupancy
+      to: "on"
+  condition:
+    - condition: template
+      value_template: >-
+        {{ this.attributes.last_triggered is none or
+           (now() - this.attributes.last_triggered).total_seconds() > 300 }}
+    - condition: state
+      entity_id: binary_sensor.master_bedroom_sensor_magnet_contact
+      state: "on"
+    - condition: state
+      entity_id: binary_sensor.jacksons_iphone_focus
+      state: "off"
+    - condition: state
+      entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_either
+      state: "off"
+    - condition: numeric_state
+      entity_id: sensor.master_bedroom_sensor_motion_illuminance
+      below: 60
+    - condition: state
+      entity_id: light.master_lights
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.master_bedroom_lights_frozen
+      state: "off"
+  action:
+    - action: scene.turn_on
+      target:
+        entity_id: scene.master_bedroom_relax
+
+- id: turn_off_master_bedroom_light_motion
+  alias: Turn Off Master Bedroom Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.master_bedroom_sensor_motion_occupancy
+      to: "off"
+      for:
+        minutes: 15
+      id: motion
+    - trigger: state
+      entity_id: light.master_bedroom
+      to: "on"
+      for:
+        minutes: 15
+      id: fallback
+    - trigger: time_pattern
+      minutes: /15
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.master_bedroom
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.master_bedroom.last_changed).total_seconds() >= 900 }}
+    - condition: state
+      entity_id: binary_sensor.master_bedroom_sensor_magnet_contact
+      state: "on"
+    - condition: state
+      entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_either
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.master_bedroom_lights_frozen
+      state: "off"
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.master_bedroom (on for
+              {{ ((now() - states.light.master_bedroom.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.master_bedroom
+    - action: light.turn_off
+      target:
+        entity_id: light.master_bedroom

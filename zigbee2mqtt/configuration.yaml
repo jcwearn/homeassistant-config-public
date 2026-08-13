@@ -1,0 +1,34 @@
+devices:
+  - devices.yaml
+groups:
+  - groups.yaml
+homeassistant:
+  enabled: true
+mqtt:
+  base_topic: zigbee2mqtt
+  server: ${z2m_mqtt_server}
+  user: ${z2m_mqtt_user}
+  password: ${z2m_mqtt_password}
+serial:
+  port: >-
+    /dev/serial/by-id/usb-dresden_elektronik_ingenieurtechnik_GmbH_ConBee_II_DE2483282-if00
+  adapter: deconz
+advanced:
+  log_level: info
+  pan_id: ${z2m_pan_id}
+  channel: 11
+  network_key: ${z2m_network_key}
+  homeassistant_legacy_entity_attributes: false
+  homeassistant_legacy_triggers: false
+  legacy_api: false
+  legacy_availability_payload: false
+device_options:
+  legacy: false
+blocklist: []
+passlist: []
+queue: {}
+frontend:
+  port: 8099
+availability:
+  enabled: false
+version: 4

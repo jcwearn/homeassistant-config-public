@@ -1,0 +1,38 @@
+- id: guest_bedroom_afternoon_sun_blinds
+  alias: Guest Bedroom Afternoon Sun Blinds
+  mode: single
+  trigger:
+    - trigger: time_pattern
+      minutes: /15
+  condition:
+    - condition: state
+      entity_id: binary_sensor.guest_bedroom_presence
+      state: "on"
+    - condition: state
+      entity_id: alarm_control_panel.ha_alarm
+      state: disarmed
+    - condition: numeric_state
+      entity_id: zone.home
+      above: 1
+    - condition: state
+      entity_id: input_boolean.guest_override
+      state: "off"
+    - condition: time
+      after: "14:00:00"
+    - condition: sun
+      before: sunset
+  action:
+    - variables:
+        elevation: "{{ state_attr('sun.sun', 'elevation') | float(0) }}"
+        # Position formula: elevation * multiplier, clamped to [min, max].
+        # multiplier: how aggressively the shade tracks the sun angle (higher = more open at same elevation)
+        # min: lowest position the shade will ever go (10 = 10% open, nearly closed)
+        # max: highest position allowed — keeps some light out even at low sun angles (45 = 45% open)
+        # Example: elevation=20° → 20*1.5=30 → clamped to [10,45] → 30% open
+        # Example: elevation=40° → 40*1.5=60 → clamped to [10,45] → 45% open (hits ceiling)
+        target_position: "{{ [[elevation * 1.5, 10] | max, 45] | min | int }}"
+    - action: cover.set_cover_position
+      target:
+        entity_id: cover.guest_bedroom_shade
+      data:
+        position: "{{ target_position }}"

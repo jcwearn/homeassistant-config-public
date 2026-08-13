@@ -1,0 +1,82 @@
+- id: misc_actionable_notification_handler
+  alias: Actionable Notification Handler
+  mode: queued
+  trigger:
+    - trigger: event
+      event_type: mobile_app_notification_action
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'LOCK_DOWN' }}"
+          sequence:
+            - action: script.turn_on
+              target:
+                entity_id: script.lock_down
+              data:
+                variables:
+                  source: notification
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'UNLOCK_FRONT' }}"
+          sequence:
+            - action: script.turn_on
+              target:
+                entity_id: script.set_lock
+              data:
+                variables:
+                  lock_entity: lock.front_door
+                  operation: unlock
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'UNLOCK_GARAGE' }}"
+          sequence:
+            - action: script.turn_on
+              target:
+                entity_id: script.set_lock
+              data:
+                variables:
+                  lock_entity: lock.garage_door
+                  operation: unlock
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'CLOSE_GARAGE' }}"
+          sequence:
+            - action: cover.close_cover
+              target:
+                entity_id: cover.garage_door
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'OPEN_GARAGE' }}"
+          sequence:
+            - action: cover.open_cover
+              target:
+                entity_id: cover.garage_door
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'DISARM' }}"
+          sequence:
+            - action: script.turn_on
+              target:
+                entity_id: script.disarm
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'TRIGGER_NOONLIGHT' }}"
+          sequence:
+            - action: script.turn_on
+              target:
+                entity_id: script.trigger_noonlight
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'DISABLE_GUEST' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.guest_override
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.event.data.action == 'DELAY_VACUUM' }}"
+          sequence:
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.vacuum_delay

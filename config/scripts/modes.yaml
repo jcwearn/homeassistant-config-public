@@ -1,0 +1,185 @@
+enable_home_mode:
+  alias: Enable Home Mode
+  icon: mdi:home
+  mode: single
+  fields:
+    source:
+      description: What triggered home mode
+      example: person.jackson
+  sequence:
+    # 5-minute cooldown
+    - condition: template
+      value_template: >-
+        {{ this.attributes.last_triggered is none
+           or (now() - this.attributes.last_triggered).total_seconds() > 300 }}
+
+    # Capture before disarming (alarm state changes after disarm)
+    - variables:
+        someone_has_been_home: >-
+          {{ is_state('binary_sensor.someone_has_been_home', 'on') }}
+
+    # Disarm alarm if armed
+    - if:
+        - condition: not
+          conditions:
+            - condition: state
+              entity_id: alarm_control_panel.ha_alarm
+              state: disarmed
+      then:
+        - action: script.disarm
+          data:
+            source: "{{ source }}"
+
+    # Resume thermostat
+    - action: script.resume_thermostat_programming
+
+    # Turn on garage and basement lights if sun is below horizon
+    - if:
+        - condition: state
+          entity_id: sun.sun
+          state: below_horizon
+      then:
+        - action: light.turn_on
+          target:
+            entity_id: light.garage_lights
+        - action: scene.turn_on
+          target:
+            entity_id: scene.basement_hallway_relax
+
+    # Additional actions only when nobody was previously home
+    - if:
+        - condition: template
+          value_template: "{{ not someone_has_been_home }}"
+      then:
+        - choose:
+            # Daytime - set fan speed based on temperature
+            - conditions:
+                - condition: state
+                  entity_id: sun.sun
+                  state: above_horizon
+              sequence:
+                - variables:
+                    temp: "{{ state_attr('climate.main_floor', 'current_temperature') | float(70) }}"
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ temp >= 72 and temp < 75 }}"
+                      sequence:
+                        - action: fan.set_percentage
+                          target:
+                            entity_id: fan.living_room_fan
+                          data:
+                            percentage: 33
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ temp >= 75 and temp <= 78 }}"
+                      sequence:
+                        - action: fan.set_percentage
+                          target:
+                            entity_id: fan.living_room_fan
+                          data:
+                            percentage: 66
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ temp > 78 }}"
+                      sequence:
+                        - action: fan.set_percentage
+                          target:
+                            entity_id: fan.living_room_fan
+                          data:
+                            percentage: 100
+          # Nighttime
+          default:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.downstairs_relax
+
+    # Open blinds based on privacy mode and sun position
+    - if:
+        - condition: state
+          entity_id: input_boolean.privacy_mode
+          state: "off"
+      then:
+        - if:
+            - condition: state
+              entity_id: sun.sun
+              state: above_horizon
+          then:
+            - action: script.open_blinds
+          else:
+            - if:
+                - condition: template
+                  value_template: "{{ state_attr('sun.sun', 'rising') }}"
+              then:
+                - wait_for_trigger:
+                    - trigger: state
+                      entity_id: sun.sun
+                      to: above_horizon
+                - action: script.open_blinds
+
+enable_away_mode:
+  alias: Enable Away Mode
+  icon: mdi:home-export-outline
+  mode: single
+  fields:
+    source:
+      description: What triggered away mode
+      example: geofence
+  sequence:
+    # 10-minute cooldown
+    - condition: template
+      value_template: >-
+        {{ this.attributes.last_triggered is none
+           or (now() - this.attributes.last_triggered).total_seconds() > 600 }}
+
+    # Lock down
+    - action: script.lock_down
+      data:
+        source: "{{ source }}"
+
+    # Set thermostat to away
+    - action: script.enable_thermostat_away
+
+    # Arm alarm if disarmed
+    - if:
+        - condition: state
+          entity_id: alarm_control_panel.ha_alarm
+          state: disarmed
+      then:
+        - action: script.arm_away
+
+    # Check if vacuum needs to run
+    - if:
+        - condition: state
+          entity_id: binary_sensor.vacuum_not_run_recently
+          state: "on"
+      then:
+        # Send actionable notification
+        - action: notify.mobile_app_jacksons_iphone
+          data:
+            title: Vacuum Starting Soon
+            message: Would you like to delay vacuum run?
+            data:
+              actions:
+                - action: DELAY_VACUUM
+                  title: "Yes"
+        - action: notify.mobile_app_noops
+          data:
+            title: Vacuum Starting Soon
+            message: Would you like to delay vacuum run?
+            data:
+              actions:
+                - action: DELAY_VACUUM
+                  title: "Yes"
+        # Wait 15 minutes for response
+        - delay:
+            minutes: 15
+        # Start vacuum if not delayed
+        - if:
+            - condition: state
+              entity_id: input_boolean.vacuum_delay
+              state: "off"
+          then:
+            - action: vacuum.start
+              target:
+                entity_id: vacuum.roomba_j7

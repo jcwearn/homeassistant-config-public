@@ -1,0 +1,20 @@
+- id: notifications_lock_battery_low
+  alias: Notifications - Lock Batteries Low
+  trigger:
+    - trigger: numeric_state
+      entity_id: sensor.front_door_battery
+      below: 21
+      id: front
+    - trigger: numeric_state
+      entity_id: sensor.garage_door_battery
+      below: 21
+      id: garage
+  action:
+    - variables:
+        door_name: >-
+          {% set names = {'front': 'Front Door', 'garage': 'Garage Door'} %}
+          {{ names[trigger.id] }}
+    - action: notify.mobile_app_jacksons_iphone
+      data:
+        title: "{{ door_name }} Battery Low"
+        message: "Battery level is {{ trigger.to_state.state }}%. Replace Batteries Soon!"

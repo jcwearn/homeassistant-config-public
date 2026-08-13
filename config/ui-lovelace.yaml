@@ -1,0 +1,9 @@
+title: Home
+views:
+  - title: Overview
+    path: overview
+    cards:
+      - type: markdown
+        content: >
+          Dashboard managed via GitOps.
+          Use the sidebar to navigate to specific dashboards.

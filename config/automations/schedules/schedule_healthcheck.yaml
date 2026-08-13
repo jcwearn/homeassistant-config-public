@@ -1,0 +1,7 @@
+- id: schedule_healthcheck
+  alias: Healthcheck Ping
+  trigger:
+    - trigger: time_pattern
+      minutes: "/5"
+  action:
+    - action: rest_command.healthcheck_ping

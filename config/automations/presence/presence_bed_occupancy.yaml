@@ -1,0 +1,96 @@
+- id: presence_bed_occupancy
+  alias: Bed Occupancy Sensors
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_either
+      to: "on"
+      id: either
+    - trigger: state
+      entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_both
+      to: "on"
+      id: both
+  action:
+    - variables:
+        people_home: "{{ states('zone.home') | int(0) }}"
+    - choose:
+        # 2 people home + first person in bed (either trigger) + lights on → nightstands relax, turn off ceiling
+        - conditions:
+            - condition: trigger
+              id: either
+            - condition: template
+              value_template: "{{ people_home == 2 }}"
+            - condition: state
+              entity_id: light.master_lights
+              state: "on"
+            - condition: state
+              entity_id: input_boolean.master_bedroom_lights_frozen
+              state: "off"
+            - condition: template
+              value_template: >-
+                {{ state_attr('light.master_bedroom_nightstands', 'brightness') | int(255) >= 143 }}
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.master_bedroom_nightstands_relax
+            - if:
+                - condition: state
+                  entity_id: light.master_bedroom_ceiling_lights
+                  state: "on"
+              then:
+                - action: light.turn_off
+                  target:
+                    entity_id: light.master_bedroom_ceiling_lights
+        # 1 person home, or both in bed with 2 home + lights on → nighttime scene, turn off closet
+        - conditions:
+            - condition: or
+              conditions:
+                - condition: template
+                  value_template: "{{ people_home == 1 }}"
+                - condition: trigger
+                  id: both
+            - condition: state
+              entity_id: light.master_lights
+              state: "on"
+            - condition: state
+              entity_id: input_boolean.master_bedroom_lights_frozen
+              state: "off"
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.master_bedroom_nighttime
+            - if:
+                - condition: state
+                  entity_id: light.master_closet_lights
+                  state: "on"
+              then:
+                - action: light.turn_off
+                  target:
+                    entity_id: light.master_closet_lights
+    # Last person in bed + door closed + bedtime hours
+    - if:
+        - condition: time
+          after: "20:00:00"
+          before: "05:00:00"
+        - condition: template
+          value_template: >-
+            {{ trigger.id == 'both' or (trigger.id == 'either' and people_home == 1) }}
+        - condition: state
+          entity_id: binary_sensor.master_bedroom_sensor_magnet_contact
+          state: "off"
+      then:
+        - action: script.enable_thermostat_sleep
+        - if:
+            - condition: state
+              entity_id: alarm_control_panel.ha_alarm
+              state: disarmed
+            - condition: state
+              entity_id: input_boolean.guest_override
+              state: "off"
+          then:
+            - action: script.arm_home
+            - action: script.turn_on
+              target:
+                entity_id: script.lock_down
+              data:
+                variables:
+                  source: bed

@@ -1,0 +1,90 @@
+- id: schedule_vacuum_daily
+  alias: Daily Vacuum Run
+  mode: single
+  trigger:
+    - trigger: time
+      at: "13:30:00"
+      id: scheduled
+    - trigger: event
+      event_type: shortcut_event
+      event_data:
+        name: vacuum
+      id: manual
+  condition:
+    - condition: or
+      conditions:
+        - condition: and
+          conditions:
+            - condition: trigger
+              id: scheduled
+            - condition: state
+              entity_id: binary_sensor.vacuum_not_run_recently
+              state: "on"
+        - condition: and
+          conditions:
+            - condition: trigger
+              id: manual
+            - condition: numeric_state
+              entity_id: sensor.vacuum_cleaning_time_12h
+              below: 1
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: person.jackson
+              state: home
+          sequence:
+            - action: notify.mobile_app_jacksons_iphone
+              data:
+                title: Vacuum Scheduled
+                message: Roomba will start in 15 minutes
+                data:
+                  actions:
+                    - action: DELAY_VACUUM
+                      title: Delay Vacuum
+            - delay:
+                minutes: 15
+            - condition: state
+              entity_id: input_boolean.vacuum_delay
+              state: "off"
+            - action: vacuum.start
+              target:
+                entity_id: vacuum.roomba_j7
+        - conditions:
+            - condition: state
+              entity_id: person.jackson
+              state: not_home
+            - condition: state
+              entity_id: person.anupama
+              state: home
+          sequence:
+            - action: notify.mobile_app_noops
+              data:
+                title: Vacuum Scheduled
+                message: Roomba will start in 15 minutes
+                data:
+                  actions:
+                    - action: DELAY_VACUUM
+                      title: Delay Vacuum
+            - delay:
+                minutes: 15
+            - condition: state
+              entity_id: input_boolean.vacuum_delay
+              state: "off"
+            - action: vacuum.start
+              target:
+                entity_id: vacuum.roomba_j7
+      default:
+        - action: vacuum.start
+          target:
+            entity_id: vacuum.roomba_j7
+
+- id: schedule_vacuum_reset_delay
+  alias: Reset Vacuum Delay
+  trigger:
+    - trigger: time
+      at: "00:00:00"
+  action:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.vacuum_delay

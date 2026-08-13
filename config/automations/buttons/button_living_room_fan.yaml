@@ -1,0 +1,63 @@
+- id: button_living_room_fan
+  alias: Living Room Fan Button
+  trigger:
+    - trigger: device
+      domain: mqtt
+      device_id: 4a05cb7e9f60a36eb9478a17eede7e2f
+      type: action
+      subtype: 1_single
+      id: 1_single
+    - trigger: device
+      domain: mqtt
+      device_id: 4a05cb7e9f60a36eb9478a17eede7e2f
+      type: action
+      subtype: 2_single
+      id: 2_single
+    - trigger: device
+      domain: mqtt
+      device_id: 4a05cb7e9f60a36eb9478a17eede7e2f
+      type: action
+      subtype: 3_single
+      id: 3_single
+    - trigger: device
+      domain: mqtt
+      device_id: 4a05cb7e9f60a36eb9478a17eede7e2f
+      type: action
+      subtype: 4_single
+      id: 4_single
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: 1_single
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.living_room_fan
+              data:
+                percentage: 100
+        - conditions:
+            - condition: trigger
+              id: 2_single
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.living_room_fan
+              data:
+                percentage: 50
+        - conditions:
+            - condition: trigger
+              id: 3_single
+          sequence:
+            - action: fan.set_percentage
+              target:
+                entity_id: fan.living_room_fan
+              data:
+                percentage: 33
+        - conditions:
+            - condition: trigger
+              id: 4_single
+          sequence:
+            - action: fan.turn_off
+              target:
+                entity_id: fan.living_room_fan

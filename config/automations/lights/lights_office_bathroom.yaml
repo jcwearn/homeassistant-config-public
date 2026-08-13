@@ -1,0 +1,64 @@
+- id: turn_on_office_bathroom_light_motion
+  alias: Turn On Office Bathroom Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.office_bathroom_sensor_motion_occupancy
+      to: "on"
+  action:
+    - action: light.turn_on
+      target:
+        entity_id: light.office_bathroom_lights
+    - action: fan.turn_on
+      target:
+        entity_id: fan.office_bathroom_fan
+
+- id: turn_off_office_bathroom_light_motion
+  alias: Turn Off Office Bathroom Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.office_bathroom_sensor_motion_occupancy
+      to: "off"
+      for:
+        minutes: 15
+      id: motion
+    - trigger: state
+      entity_id: light.office_bathroom_lights
+      to: "on"
+      for:
+        minutes: 15
+      id: fallback
+    - trigger: time_pattern
+      minutes: /15
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.office_bathroom_lights
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.office_bathroom_lights.last_changed).total_seconds() >= 900 }}
+    - condition: state
+      entity_id: binary_sensor.office_bathroom_sensor_magnet_contact
+      state: "on"
+    - condition: state
+      entity_id: input_boolean.party_mode
+      state: "off"
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.office_bathroom_lights (on for
+              {{ ((now() - states.light.office_bathroom_lights.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.office_bathroom_lights
+    - action: light.turn_off
+      target:
+        entity_id: light.office_bathroom_lights
+    - action: fan.turn_off
+      target:
+        entity_id: fan.office_bathroom_fan

@@ -1,0 +1,7 @@
+alarm_control_panel:
+  - platform: manual
+    code: !secret alarm_pin
+    arming_time: 120
+    trigger_time: 900
+    armed_home:
+      arming_time: 0

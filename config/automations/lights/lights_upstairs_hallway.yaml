@@ -1,0 +1,69 @@
+- id: turn_on_upstairs_hallway_light_motion
+  alias: Turn On Upstairs Hallway Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.roof_stairwell_sensor_motion_01_occupancy
+      to: "on"
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.roof_stairwell_sensor_motion_01_illuminance
+      below: 40
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_either
+              state: "on"
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.upstairs_hallway_nightlight
+      default:
+        - action: scene.turn_on
+          target:
+            entity_id: scene.upstairs_hallway_relax
+
+- id: turn_off_upstairs_hallway_light_motion
+  alias: Turn Off Upstairs Hallway Light - Motion
+  trigger:
+    - trigger: state
+      entity_id: binary_sensor.roof_stairwell_sensor_motion_01_occupancy
+      to: "off"
+      for:
+        minutes: 5
+      id: motion
+    - trigger: state
+      entity_id: light.upstairs_hallway
+      to: "on"
+      for:
+        minutes: 5
+      id: fallback
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  condition:
+    - condition: state
+      entity_id: light.upstairs_hallway
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.upstairs_hallway.last_changed).total_seconds() >= 300 }}
+    - condition: state
+      entity_id: input_boolean.party_mode
+      state: "off"
+  action:
+    - if:
+        - condition: trigger
+          id: watchdog
+      then:
+        - action: logbook.log
+          data:
+            name: Lights Watchdog
+            message: >-
+              Turned off light.upstairs_hallway (on for
+              {{ ((now() - states.light.upstairs_hallway.last_changed).total_seconds() / 60)
+                 | round(0) }} minutes)
+            entity_id: light.upstairs_hallway
+    - action: light.turn_off
+      target:
+        entity_id: light.upstairs_hallway

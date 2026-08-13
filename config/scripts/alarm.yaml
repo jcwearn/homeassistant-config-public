@@ -1,0 +1,85 @@
+arm_away:
+  alias: Arm Away
+  icon: mdi:shield-lock
+  sequence:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: alarm_control_panel.ha_alarm
+          state: armed_away
+    - action: alarm_control_panel.alarm_arm_away
+      target:
+        entity_id: alarm_control_panel.ha_alarm
+      data:
+        code: !secret alarm_pin
+
+arm_home:
+  alias: Arm Home
+  icon: mdi:shield-home
+  sequence:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: alarm_control_panel.ha_alarm
+          state: armed_home
+    - action: alarm_control_panel.alarm_arm_home
+      target:
+        entity_id: alarm_control_panel.ha_alarm
+      data:
+        code: !secret alarm_pin
+
+trigger_alarm:
+  alias: Trigger Alarm
+  icon: mdi:shield-alert
+  sequence:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: alarm_control_panel.ha_alarm
+          state: triggered
+    - action: alarm_control_panel.alarm_trigger
+      target:
+        entity_id: alarm_control_panel.ha_alarm
+      data:
+        code: !secret alarm_pin
+
+disarm:
+  alias: Disarm
+  icon: mdi:shield-off
+  fields:
+    source:
+      description: What triggered the disarm
+      example: person.jackson
+  sequence:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: alarm_control_panel.ha_alarm
+          state: disarmed
+    - action: alarm_control_panel.alarm_disarm
+      target:
+        entity_id: alarm_control_panel.ha_alarm
+      data:
+        code: !secret alarm_pin
+    - variables:
+        notify_text: >-
+          {% set source_map = {
+            'person.anupama': 'Anupama arriving home',
+            'person.jackson': 'Jackson arriving home',
+            'interior_door': 'Master Bedroom Door Opening',
+            'guest_mode': 'Guest Mode being enabled',
+            'manual_unlock': 'a manual unlock'
+          } %}
+          {{ source_map.get(source, 'something weird') }}
+    - action: notify.mobile_app_jacksons_iphone
+      data:
+        title: Alarm System Disarmed
+        message: "Disarmed by {{ notify_text }}"
+        data:
+          tag: disarmed
+    - action: notify.mobile_app_noops
+      data:
+        title: Alarm System Disarmed
+        message: "Disarmed by {{ notify_text }}"
+        data:
+          tag: disarmed

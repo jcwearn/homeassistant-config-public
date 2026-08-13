@@ -1,0 +1,8 @@
+rest_command:
+  ntfy_tailscale:
+    url: !secret ntfy_url
+    method: POST
+    headers:
+      Title: Tailscale
+      Authorization: !secret ntfy_token
+    payload: "{{ message }}"

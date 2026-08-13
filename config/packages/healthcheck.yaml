@@ -1,0 +1,4 @@
+rest_command:
+  healthcheck_ping:
+    url: !secret healthcheck_ping_url
+    method: GET

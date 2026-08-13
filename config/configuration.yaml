@@ -1,0 +1,50 @@
+homeassistant:
+  name: Home
+  unit_system: us_customary
+  currency: USD
+  country: US
+  time_zone: !secret timezone
+  latitude: !secret latitude
+  longitude: !secret longitude
+  elevation: !secret elevation
+  external_url: https://home.wearn.dev
+  allowlist_external_dirs:
+    - /media
+    - /config/snapshots/
+    - /config/www
+  media_dirs:
+    local: /media
+  packages: !include_dir_named packages
+
+default_config:
+
+tts:
+  - platform: google_translate
+    cache: true
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+lovelace:
+  dashboards:
+    lovelace:
+      mode: yaml
+      filename: ui-lovelace.yaml
+      title: Overview
+      icon: mdi:view-dashboard
+      show_in_sidebar: true
+    lovelace-alarm:
+      mode: yaml
+      title: Alarm
+      icon: mdi:shield-home
+      filename: dashboards/alarm.yaml
+      show_in_sidebar: true
+
+zone:
+  - name: Home
+    latitude: !secret latitude
+    longitude: !secret longitude
+    radius: 100
+
+automation: !include_dir_merge_list automations/
+script: !include_dir_merge_named scripts/

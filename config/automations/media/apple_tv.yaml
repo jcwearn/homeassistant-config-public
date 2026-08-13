@@ -1,0 +1,146 @@
+- id: media_apple_tv_watchdog
+  alias: Apple TV - Reload on Disconnect
+  mode: single
+  trigger:
+    - trigger: state
+      entity_id:
+        - media_player.living_room_homepod
+        - media_player.dining_room_homepod
+      to: "off"
+    - trigger: state
+      entity_id:
+        - media_player.living_room_homepod
+        - media_player.dining_room_homepod
+        - media_player.living_room
+      to: "unavailable"
+  condition:
+    - condition: template
+      value_template: >-
+        {{ state_attr(trigger.entity_id, 'volume_level') == None }}
+  action:
+    - delay: "00:00:30"
+    - condition: template
+      value_template: >-
+        {{ state_attr(trigger.entity_id, 'volume_level') == None }}
+    - action: homeassistant.reload_config_entry
+      target:
+        entity_id:
+          - media_player.living_room_homepod
+          - media_player.dining_room_homepod
+          - media_player.living_room
+
+- id: media_apple_tv_nightly_reload
+  alias: Apple TV - Nightly Reload
+  trigger:
+    - trigger: time
+      at: "04:00:00"
+  action:
+    - action: homeassistant.reload_config_entry
+      target:
+        entity_id:
+          - media_player.living_room_homepod
+          - media_player.dining_room_homepod
+          - media_player.living_room
+
+- id: media_apple_tv_playing_dim_lights
+  alias: Apple TV - Playing/Stopped → Adjust Lights
+  mode: single
+  trigger:
+    - trigger: state
+      entity_id: media_player.living_room
+      to:
+        - playing
+        - idle
+        - standby
+        - paused
+  condition:
+    - condition: state
+      entity_id: input_boolean.theater_mode
+      state: "on"
+    - condition: state
+      entity_id: input_boolean.guest_override
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.party_mode
+      state: "off"
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: timer.tv_lights_timer
+          state: active
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'playing' }}"
+          sequence:
+            - choose:
+                - conditions:
+                    - condition: state
+                      entity_id: binary_sensor.everything_presence_lite_2fbc58_occupancy
+                      state: "on"
+                    - condition: state
+                      entity_id: binary_sensor.main_floor_bathroom_sensor_motion_occupancy
+                      state: "on"
+                  sequence:
+                    - action: light.turn_off
+                      target:
+                        entity_id:
+                          - light.basement_lights
+                          - light.upstairs_hallway
+                          - light.kitchen_under_cabinet
+                          - light.downstairs
+                - conditions:
+                    - condition: state
+                      entity_id: binary_sensor.everything_presence_lite_2fbc58_occupancy
+                      state: "on"
+                    - condition: state
+                      entity_id: binary_sensor.main_floor_bathroom_sensor_motion_occupancy
+                      state: "off"
+                  sequence:
+                    - action: light.turn_off
+                      target:
+                        entity_id:
+                          - light.basement_lights
+                          - light.upstairs_hallway
+                          - light.kitchen_under_cabinet
+                          - light.downstairs
+                          - light.main_floor_bathroom_lights
+                - conditions:
+                    - condition: state
+                      entity_id: binary_sensor.everything_presence_lite_2fbc58_occupancy
+                      state: "off"
+                    - condition: state
+                      entity_id: binary_sensor.main_floor_bathroom_sensor_motion_occupancy
+                      state: "on"
+                  sequence:
+                    - action: light.turn_off
+                      target:
+                        entity_id:
+                          - light.basement_lights
+                          - light.upstairs_hallway
+                          - light.main_floor_lights_without_bathroom
+              default:
+                - action: light.turn_off
+                  target:
+                    entity_id:
+                      - light.basement_lights
+                      - light.main_floor_lights
+                      - light.upstairs_hallway
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.from_state.state == 'playing' }}"
+            - condition: template
+              value_template: "{{ trigger.to_state.state in ['idle', 'standby', 'paused'] }}"
+            - condition: state
+              entity_id: sun.sun
+              state: below_horizon
+            - condition: state
+              entity_id: light.main_floor_lights
+              state: "off"
+          sequence:
+            - action: scene.turn_on
+              target:
+                entity_id: scene.downstairs_relax
+              data:
+                transition: 20

@@ -1,0 +1,134 @@
+input_boolean:
+  master_bedroom_lights_frozen:
+    name: Master Bedroom Lights Frozen
+    icon: mdi:snowflake
+  guest_override:
+    name: Guest Override
+  party_mode:
+    name: Party Mode
+    icon: mdi:party-popper
+  privacy_mode:
+    name: Privacy Mode
+  theater_mode:
+    name: Theater Mode
+    icon: mdi:theater
+  vacation_mode:
+    name: Vacation Mode
+    icon: mdi:wallet-travel
+  vacuum_delay:
+    name: Vacuum Delay
+    icon: mdi:robot-vacuum
+
+input_datetime:
+  guest_mode_schedule:
+    name: Guest Mode Schedule
+    has_date: true
+    has_time: true
+  guest_mode_schedule_end:
+    name: Guest Mode Schedule End
+    has_date: true
+    has_time: true
+
+input_number:
+  basement_lux_threshold:
+    name: Basement Lux Threshold
+    icon: mdi:brightness-5
+    min: 0
+    max: 100
+    step: 1
+    mode: box
+
+input_text:
+  alarm_disarm_source:
+    name: Alarm Disarm Source
+    icon: mdi:alarm-panel
+    min: 0
+    max: 100
+    mode: text
+  alarm_previous_state:
+    name: Alarm Previous State
+    icon: mdi:alarm-panel
+    min: 0
+    max: 30
+    mode: text
+
+timer:
+  tv_lights_timer:
+    name: TV Lights Timer
+    icon: mdi:television
+    restore: false
+    duration: "0:00:00"
+
+template:
+  - binary_sensor:
+      - name: Guest Bedroom Presence
+        unique_id: guest_bedroom_presence
+        state: >-
+          {{ is_state('binary_sensor.basement_smartsensor_occupancy', 'on')
+             or is_state('binary_sensor.guest_bedroom_sensor_motion_occupancy', 'on')
+             or is_state('binary_sensor.guest_bedroom_bathroom_sensor_motion_occupancy', 'on') }}
+        device_class: occupancy
+
+      - name: Office Presence
+        unique_id: office_presence
+        state: >-
+          {{ is_state('binary_sensor.ecobee_sensor_office_occupancy', 'on')
+             or is_state('binary_sensor.office_sensor_motion_occupancy', 'on')
+             or is_state('binary_sensor.s1_pro_multi_sense_614694_any_presence', 'on')
+             or is_state('binary_sensor.office_bathroom_sensor_magnet_contact', 'off')
+             or is_state('binary_sensor.office_sensor_magnet_contact', 'off') }}
+        device_class: occupancy
+
+      - name: Is Somebody Home
+        unique_id: is_somebody_home
+        state: "{{ state_attr('zone.home', 'persons') | length > 0 }}"
+        device_class: presence
+
+      - name: Someone Has Been Home
+        unique_id: someone_has_been_home
+        state: >-
+          {{ is_state('alarm_control_panel.ha_alarm', 'disarmed')
+             or states('zone.home') | int > 0 }}
+        delay_on: "00:05:00"
+
+      - name: Door Left Open
+        unique_id: door_left_open
+        state: >-
+          {{ expand([
+               'binary_sensor.front_door_sensor_magnet_contact',
+               'binary_sensor.garage_door_sensor_magnet_contact',
+               'binary_sensor.roof_door_sensor_magnet_contact'
+             ]) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+        device_class: door
+        attributes:
+          open_doors: >-
+            {{ expand([
+                 'binary_sensor.front_door_sensor_magnet_contact',
+                 'binary_sensor.garage_door_sensor_magnet_contact',
+                 'binary_sensor.roof_door_sensor_magnet_contact'
+               ]) | selectattr('state', 'eq', 'on')
+               | map(attribute='name') | list }}
+
+      - name: Vacuum Not Run Recently
+        unique_id: vacuum_not_run_recently
+        state: >-
+          {{ states('sensor.vacuum_cleaning_time_36h') | float(0) == 0 }}
+
+sensor:
+  - platform: history_stats
+    name: Vacuum Cleaning Time 36h
+    unique_id: vacuum_cleaning_time_36h
+    entity_id: vacuum.roomba_j7
+    state: cleaning
+    type: time
+    start: "{{ now() - timedelta(hours=36) }}"
+    end: "{{ now() }}"
+
+  - platform: history_stats
+    name: Vacuum Cleaning Time 12h
+    unique_id: vacuum_cleaning_time_12h
+    entity_id: vacuum.roomba_j7
+    state: cleaning
+    type: time
+    start: "{{ now() - timedelta(hours=12) }}"
+    end: "{{ now() }}"

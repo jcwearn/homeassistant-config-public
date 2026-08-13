@@ -1,0 +1,25 @@
+scene:
+  - id: "1643988159007"
+    name: Dining Room - Pleasant
+    icon: mdi:table-chair
+    entities:
+      light.dining_room_light:
+        brightness: 63
+        state: "on"
+  - id: "1645714736845"
+    name: Basement Stairwell - Pleasant
+    icon: mdi:light-recessed
+    entities:
+      light.basement_stairwell_lights:
+        brightness: 76
+        state: "on"
+  - id: "1646769047793"
+    name: Cooking/Cleaning - Kitchen
+    icon: mdi:silverware-clean
+    entities:
+      light.kitchen:
+        brightness: 255
+        color_temp_kelvin: 4291
+        state: "on"
+      light.kitchen_under_cabinet:
+        state: "on"

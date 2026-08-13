@@ -1,0 +1,17 @@
+- id: misc_tailscale_webhook
+  alias: Tailscale - Webhook → Ntfy Notification
+  mode: queued
+  trigger:
+    - trigger: webhook
+      webhook_id: !secret tailscale_webhook_id
+      allowed_methods:
+        - POST
+        - PUT
+      local_only: false
+  condition:
+    - condition: template
+      value_template: "{{ trigger.json is iterable and trigger.json | length > 0 and trigger.json[0].message is defined }}"
+  action:
+    - action: rest_command.ntfy_tailscale
+      data:
+        message: "{{ trigger.json[0].message }}"

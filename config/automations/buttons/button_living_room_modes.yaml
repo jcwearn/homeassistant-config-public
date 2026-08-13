@@ -1,0 +1,83 @@
+- id: button_living_room_modes
+  alias: Living Room Mode Button
+  trigger:
+    - trigger: device
+      domain: mqtt
+      device_id: fdba0043d613697f67aaa71379feb20b
+      type: action
+      subtype: 1_single
+      id: 1_single
+    - trigger: device
+      domain: mqtt
+      device_id: fdba0043d613697f67aaa71379feb20b
+      type: action
+      subtype: 2_single
+      id: 2_single
+    - trigger: device
+      domain: mqtt
+      device_id: fdba0043d613697f67aaa71379feb20b
+      type: action
+      subtype: 3_single
+      id: 3_single
+    - trigger: device
+      domain: mqtt
+      device_id: fdba0043d613697f67aaa71379feb20b
+      type: action
+      subtype: 4_single
+      id: 4_single
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: 1_single
+          sequence:
+            - action: input_boolean.toggle
+              target:
+                entity_id: input_boolean.guest_override
+            - action: tts.cloud_say
+              target:
+                entity_id: media_player.living_room_homepod
+              data:
+                message: >-
+                  Guest Mode {{ 'enabled' if states('input_boolean.guest_override') == 'on' else 'disabled' }}
+        - conditions:
+            - condition: trigger
+              id: 2_single
+          sequence:
+            - action: input_boolean.toggle
+              target:
+                entity_id: input_boolean.party_mode
+            - action: tts.cloud_say
+              target:
+                entity_id: media_player.living_room_homepod
+              data:
+                message: >-
+                  Party Mode {{ 'enabled' if states('input_boolean.party_mode') == 'on' else 'disabled' }}
+        - conditions:
+            - condition: trigger
+              id: 3_single
+          sequence:
+            - action: input_boolean.toggle
+              target:
+                entity_id: input_boolean.privacy_mode
+            - action: tts.cloud_say
+              target:
+                entity_id: media_player.living_room_homepod
+              data:
+                message: >-
+                  Privacy Mode {{ 'enabled' if states('input_boolean.privacy_mode') == 'on' else 'disabled' }}
+        - conditions:
+            - condition: trigger
+              id: 4_single
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.guest_override
+                  - input_boolean.party_mode
+                  - input_boolean.privacy_mode
+            - action: tts.cloud_say
+              target:
+                entity_id: media_player.living_room_homepod
+              data:
+                message: All Custom Modes Disabled
