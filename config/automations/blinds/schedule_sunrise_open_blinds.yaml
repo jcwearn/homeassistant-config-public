@@ -1,0 +1,21 @@
+- id: schedule_sunrise_open_blinds
+  alias: Sunrise Open Blinds While Away
+  # Counterpart to schedule_nightly_close_blinds. Without this, leaving overnight
+  # left the blinds shut all the next day: the nightly automation closes them at
+  # dusk and nothing reopens them until somebody is home to trip the stairwell
+  # motion sensor that drives blinds_open_morning. The house plants need the light.
+  trigger:
+    - trigger: state
+      entity_id: sun.sun
+      to: above_horizon
+  condition:
+    - condition: state
+      entity_id: binary_sensor.is_somebody_home
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.privacy_mode
+      state: "off"
+  action:
+    - action: script.turn_on
+      target:
+        entity_id: script.open_blinds
