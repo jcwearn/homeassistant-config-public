@@ -12,5 +12,11 @@ jobs:
     with:
       target-repo: jcwearn/homeassistant-config-public
       readme-override: .github/public-README.md
+      # The author stays github-actions[bot]; the committer is the identity
+      # GitHub verifies a signature against, so it must be an email on the
+      # account owning PUBLIC_SYNC_SIGNING_KEY.
+      signer-name: Jackson Wearn
+      signer-email: 2472105+jcwearn@users.noreply.github.com
     secrets:
       DEPLOY_KEY: ${{ secrets.PUBLIC_SYNC_DEPLOY_KEY }}
+      SIGNING_KEY: ${{ secrets.PUBLIC_SYNC_SIGNING_KEY }}
