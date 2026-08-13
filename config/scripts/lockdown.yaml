@@ -53,8 +53,18 @@ lock_down:
               lock_entity: lock.garage_door
               operation: lock
 
-    # Close blinds if any are open
+    # Close blinds if any are open, unless it's daylight -- the house plants need
+    # the light while nobody is home. Privacy Mode closes them regardless.
+    # Blinds still close 10 minutes after sunset via schedule_nightly_close_blinds.
     - if:
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: sun.sun
+              state: below_horizon
+            - condition: state
+              entity_id: input_boolean.privacy_mode
+              state: "on"
         - condition: or
           conditions:
             - condition: not
