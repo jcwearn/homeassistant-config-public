@@ -5,10 +5,12 @@ master_bedroom_night_fan:
     - condition: state
       entity_id: fan.master_bedroom_ceiling_fan
       state: "off"
+    # Outdoor temp, not indoor: the bedroom sensor is one of the ecobee's active
+    # sensors, so the AC holds it at the sleep setpoint year-round.
     - variables:
-        temp: "{{ states('sensor.master_bedroom_smartsensor_temperature') | float(70) }}"
+        outdoor: "{{ state_attr('weather.home', 'temperature') | float(75) }}"
     - action: fan.set_percentage
       target:
         entity_id: fan.master_bedroom_ceiling_fan
       data:
-        percentage: "{{ 100 if temp > 71 else 75 }}"
+        percentage: "{{ 100 if outdoor >= 65 else 75 }}"
