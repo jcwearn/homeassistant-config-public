@@ -85,15 +85,4 @@
                         - action: cover.close_cover
                           target:
                             entity_id: cover.master_bedroom_curtains
-                        - if:
-                            - condition: state
-                              entity_id: fan.master_bedroom_ceiling_fan
-                              state: "off"
-                          then:
-                            - variables:
-                                temp: "{{ states('sensor.master_bedroom_smartsensor_temperature') | float(70) }}"
-                            - action: fan.set_percentage
-                              target:
-                                entity_id: fan.master_bedroom_ceiling_fan
-                              data:
-                                percentage: "{{ 100 if temp > 71 else 75 }}"
+                        - action: script.master_bedroom_night_fan

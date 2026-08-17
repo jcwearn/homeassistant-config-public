@@ -66,6 +66,17 @@
                 - action: light.turn_off
                   target:
                     entity_id: light.master_closet_lights
+    # First person in bed at night → start the ceiling fan (door may still be open)
+    - if:
+        - condition: trigger
+          id: either
+        - condition: state
+          entity_id: sun.sun
+          state: below_horizon
+        - condition: template
+          value_template: "{{ now().hour >= 20 or now().hour < 5 }}"
+      then:
+        - action: script.master_bedroom_night_fan
     # Last person in bed + door closed + bedtime hours
     - if:
         - condition: time
