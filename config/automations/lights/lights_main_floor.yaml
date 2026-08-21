@@ -12,6 +12,13 @@
     - condition: state
       entity_id: sun.sun
       state: below_horizon
+    # Dawn brightens the main floor well before sunrise. Once the sun is within
+    # 4 degrees of the horizon there is usually enough daylight to skip the
+    # scene. Morning only - evening behaviour is deliberately unchanged.
+    - condition: template
+      value_template: >-
+        {{ not state_attr('sun.sun', 'rising')
+           or state_attr('sun.sun', 'elevation') | float(0) < -4 }}
     - condition: state
       entity_id: group.main_floor_lights
       state: "off"
@@ -53,3 +60,50 @@
         - action: scene.turn_on
           target:
             entity_id: scene.upstairs_hallway_relax
+
+- id: turn_off_main_floor_lights_daylight
+  alias: Turn Off Main Floor Lights - Morning Daylight
+  trigger:
+    - trigger: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      above: 5
+      id: daylight
+    - trigger: time_pattern
+      minutes: /5
+      id: watchdog
+  condition:
+    # Clear the overnight lights once per morning, then leave the day alone.
+    - condition: template
+      value_template: >-
+        {{ this.attributes.last_triggered is none or
+           this.attributes.last_triggered.date() < now().date() }}
+    - condition: state
+      entity_id: light.main_floor_lights
+      state: "on"
+    - condition: template
+      value_template: >-
+        {{ state_attr('sun.sun', 'rising')
+           and state_attr('sun.sun', 'elevation') | float(0) > 5 }}
+    - condition: time
+      before: "12:00:00"
+    - condition: state
+      entity_id: input_boolean.party_mode
+      state: "off"
+    - condition: template
+      value_template: >-
+        {{ (now() - states.light.main_floor_lights.last_changed).total_seconds() >= 300 }}
+  action:
+    - action: logbook.log
+      data:
+        name: Lights Watchdog
+        message: >-
+          Turned off light.main_floor_lights - main floor is bright (on for
+          {{ ((now() - states.light.main_floor_lights.last_changed).total_seconds() / 60)
+             | round(0) }} minutes)
+        entity_id: light.main_floor_lights
+    - action: light.turn_off
+      target:
+        entity_id: light.main_floor_lights
+      data:
+        transition: 20
