@@ -93,7 +93,6 @@ Revisit between phases or when convenient. Sorted by priority.
 |------|--------|-------|
 | Add `unique_id` to platform groups | Agent notes 2026-03-05 | Groups defined via `group:` in configuration.yaml lack unique_id; may cause issues with UI editing or entity registry |
 | Validate workflow push trigger redundancy | PR #2 review | Validate runs on push to main redundantly with deploy; consider removing or making deploy `needs: validate` |
-| Mock secrets JSON regex ordering | PR #2 review | Verify `golles/mock-yaml-secrets-action` matching behavior (first-match vs last-match); specific rules should come after generic regexes if last-match-wins |
 | Pin SOPS binary checksum in deploy workflow | Agent notes 2026-03-05 | Download integrity not verified beyond HTTPS |
 
 ### Low — Hardening / Polish
@@ -110,6 +109,24 @@ Revisit between phases or when convenient. Sorted by priority.
 
 > Add notes here about decisions made, issues encountered, or context that future
 > agents need. Prefix each entry with a date.
+
+### 2026-08-21 (dropped the mock-secrets action)
+
+- Renovate flagged `golles/mock-yaml-secrets-action` as abandoned. The repo is
+  actually still maintained (last commit 2026-08-02), but `abandonments:recommended`
+  — inherited via `config:best-practices` in the shared `jcwearn/renovate-config`
+  preset — uses a 1-year threshold against the latest *release*, and v1.1.2 is from
+  2024-10-18. No maintained alternative action exists.
+- Replaced it with `.github/scripts/mock-secrets.py`, a local reimplementation.
+  Output was diffed against the pinned upstream bundle running on this config:
+  identical. Two deliberate differences — the script overwrites rather than appends
+  (so local re-runs don't duplicate keys) and emits keys sorted rather than in
+  directory-walk order.
+- **Closes the "mock secrets JSON regex ordering" follow-up**: upstream `applyRules`
+  returns on the first matching rule, so it is first-match-wins and the existing
+  ordering in `mock-secrets-config.json` (specific literals before the generic
+  `.*password.*` / `.*token.*` regexes) is correct. The local script preserves that
+  ordering via Python dict insertion order.
 
 ### 2026-08-13 (secret scrub ahead of public publishing)
 - **The alarm PIN was rotated.** The previous value had been recorded in plaintext in this file (in the 2026-03-05 note about moving the code to `!secret alarm_pin`) and is therefore in git history across most commits. Treat the old code as burned. Never write a secret's value into these notes — record only that it changed and where it lives.

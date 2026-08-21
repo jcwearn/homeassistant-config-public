@@ -9,12 +9,14 @@ on:
       - ".yamllint.yaml"
       - ".github/workflows/validate.yaml"
       - ".github/workflows/mock-secrets-config.json"
+      - ".github/scripts/**"
   pull_request:
     paths:
       - "config/**"
       - ".yamllint.yaml"
       - ".github/workflows/validate.yaml"
       - ".github/workflows/mock-secrets-config.json"
+      - ".github/scripts/**"
   workflow_dispatch:
 
 jobs:
@@ -32,9 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
-      - uses: golles/mock-yaml-secrets-action@d6c5dcb9889077e44827c50e5f6bdac3636c89e5  # v1
-        with:
-          configFile: .github/workflows/mock-secrets-config.json
+      - name: Generate mock secrets
+        run: python3 .github/scripts/mock-secrets.py .github/workflows/mock-secrets-config.json
 
       - name: Get cache key (week)
         id: week
