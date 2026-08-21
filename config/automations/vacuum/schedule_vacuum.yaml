@@ -1,6 +1,7 @@
 - id: schedule_vacuum_daily
   alias: Daily Vacuum Run
-  mode: single
+  # restart: a Siri run fired while parked in the wait below must not be dropped
+  mode: restart
   trigger:
     - trigger: time
       at: "13:30:00"
@@ -28,56 +29,33 @@
               entity_id: sensor.vacuum_cleaning_time_12h
               below: 1
   action:
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: person.jackson
-              state: home
-          sequence:
-            - action: notify.mobile_app_jacksons_iphone
-              data:
-                title: Vacuum Scheduled
-                message: Roomba will start in 15 minutes
-                data:
-                  actions:
-                    - action: DELAY_VACUUM
-                      title: Delay Vacuum
-            - delay:
-                minutes: 15
-            - condition: state
-              entity_id: input_boolean.vacuum_delay
-              state: "off"
-            - action: vacuum.start
-              target:
-                entity_id: vacuum.roomba_j7
-        - conditions:
-            - condition: state
-              entity_id: person.jackson
-              state: not_home
-            - condition: state
-              entity_id: person.anupama
-              state: home
-          sequence:
-            - action: notify.mobile_app_noops
-              data:
-                title: Vacuum Scheduled
-                message: Roomba will start in 15 minutes
-                data:
-                  actions:
-                    - action: DELAY_VACUUM
-                      title: Delay Vacuum
-            - delay:
-                minutes: 15
-            - condition: state
-              entity_id: input_boolean.vacuum_delay
-              state: "off"
-            - action: vacuum.start
-              target:
-                entity_id: vacuum.roomba_j7
-      default:
-        - action: vacuum.start
-          target:
-            entity_id: vacuum.roomba_j7
+    # A scheduled run must never interrupt someone in the living room. Wait for
+    # the TV to go quiet or the house to empty, then run. Siri-triggered runs are
+    # deliberate, so they skip the wait.
+    - if:
+        - condition: trigger
+          id: scheduled
+        - condition: state
+          entity_id: binary_sensor.living_room_tv_in_use
+          state: "on"
+        - condition: state
+          entity_id: binary_sensor.is_somebody_home
+          state: "on"
+      then:
+        # wait_template, not wait_for_trigger: it re-checks the condition before
+        # subscribing, so a state change between the if above and the wait
+        # below can't strand the run until the timeout.
+        - wait_template: >-
+            {{ is_state('binary_sensor.living_room_tv_in_use', 'off')
+               or is_state('binary_sensor.is_somebody_home', 'off') }}
+          # Give up at 20:00 and try again tomorrow. Clamped at 0 because a
+          # negative timeout aborts the run with an error instead.
+          timeout: >-
+            {{ [(today_at('20:00') - now()).total_seconds(), 0] | max }}
+          continue_on_timeout: false
+    - action: script.turn_on
+      target:
+        entity_id: script.run_vacuum
 
 - id: schedule_vacuum_reset_delay
   alias: Reset Vacuum Delay

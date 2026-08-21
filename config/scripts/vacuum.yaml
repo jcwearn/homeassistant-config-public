@@ -1,0 +1,36 @@
+run_vacuum:
+  alias: Run Vacuum
+  icon: mdi:robot-vacuum
+  mode: single
+  sequence:
+    # Warn whoever is home so they get a chance to defer. If nobody is home the
+    # house has just emptied (away mode), so warn both phones instead.
+    - variables:
+        home_targets: >-
+          {{ (['notify.mobile_app_jacksons_iphone'] if is_state('person.jackson', 'home') else [])
+             + (['notify.mobile_app_noops'] if is_state('person.anupama', 'home') else []) }}
+    - variables:
+        notify_targets: >-
+          {{ home_targets if home_targets
+             else ['notify.mobile_app_jacksons_iphone', 'notify.mobile_app_noops'] }}
+    - repeat:
+        for_each: "{{ notify_targets }}"
+        sequence:
+          - action: "{{ repeat.item }}"
+            data:
+              title: Vacuum Scheduled
+              message: Roomba will start in 15 minutes
+              data:
+                actions:
+                  - action: DELAY_VACUUM
+                    title: Delay Vacuum
+
+    # Give them 15 minutes to tap Delay Vacuum before starting
+    - delay:
+        minutes: 15
+    - condition: state
+      entity_id: input_boolean.vacuum_delay
+      state: "off"
+    - action: vacuum.start
+      target:
+        entity_id: vacuum.roomba_j7

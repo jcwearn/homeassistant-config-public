@@ -1,0 +1,16 @@
+- id: misc_vacuum_error_notify
+  alias: Vacuum - Error → Notify
+  mode: single
+  trigger:
+    # The roomba integration exposes no error sensor and leaves the status
+    # attribute null, so the entity state is the only signal. Hold for 2 minutes
+    # to ignore transient blips.
+    - trigger: state
+      entity_id: vacuum.roomba_j7
+      to: error
+      for: "00:02:00"
+  action:
+    - action: notify.mobile_app_jacksons_iphone
+      data:
+        title: Roomba Needs Help
+        message: Roomba stopped with an error and needs to be rescued.

@@ -79,6 +79,20 @@ template:
              or is_state('binary_sensor.office_sensor_magnet_contact', 'off') }}
         device_class: occupancy
 
+      # The Apple TV flaps between playing/idle/paused constantly during real
+      # viewing, so only 'off' reliably means the living room is free.
+      # delay_on ignores the sub-second 'paused' blips the integration emits
+      # while the TV is off; delay_off smooths the flapping and keeps the room
+      # "in use" for a grace period after the TV goes off.
+      - name: Living Room TV In Use
+        unique_id: living_room_tv_in_use
+        state: >-
+          {{ states('media_player.living_room')
+             not in ['off', 'standby', 'unavailable', 'unknown'] }}
+        delay_on: "00:01:00"
+        delay_off: "00:15:00"
+        device_class: occupancy
+
       - name: Is Somebody Home
         unique_id: is_somebody_home
         state: "{{ state_attr('zone.home', 'persons') | length > 0 }}"

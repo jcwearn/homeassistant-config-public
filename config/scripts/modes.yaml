@@ -154,32 +154,7 @@ enable_away_mode:
           entity_id: binary_sensor.vacuum_not_run_recently
           state: "on"
       then:
-        # Send actionable notification
-        - action: notify.mobile_app_jacksons_iphone
-          data:
-            title: Vacuum Starting Soon
-            message: Would you like to delay vacuum run?
-            data:
-              actions:
-                - action: DELAY_VACUUM
-                  title: "Yes"
-        - action: notify.mobile_app_noops
-          data:
-            title: Vacuum Starting Soon
-            message: Would you like to delay vacuum run?
-            data:
-              actions:
-                - action: DELAY_VACUUM
-                  title: "Yes"
-        # Wait 15 minutes for response
-        - delay:
-            minutes: 15
-        # Start vacuum if not delayed
-        - if:
-            - condition: state
-              entity_id: input_boolean.vacuum_delay
-              state: "off"
-          then:
-            - action: vacuum.start
-              target:
-                entity_id: vacuum.roomba_j7
+        # Fire-and-forget so away mode doesn't hold its single slot for 15 minutes
+        - action: script.turn_on
+          target:
+            entity_id: script.run_vacuum
