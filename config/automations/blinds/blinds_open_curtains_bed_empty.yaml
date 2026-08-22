@@ -1,0 +1,38 @@
+# Weekend counterpart to schedule_open_curtains, which is gated to mon-fri.
+# Without this the curtains stay closed all weekend.
+- id: blinds_open_curtains_bed_empty
+  alias: Open Curtains After Bed Empty
+  mode: single
+  trigger:
+    # No `from:` on purpose - the bed sensor blips to unavailable, and an
+    # unavailable -> off recovery should still start the 30 minute clock.
+    - trigger: state
+      entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_either
+      to: "off"
+      for:
+        minutes: 30
+  condition:
+    - condition: time
+      weekday:
+        - sat
+        - sun
+    - condition: template
+      value_template: >-
+        {{ this.attributes.last_triggered is none or
+           this.attributes.last_triggered | as_datetime | as_local < now().replace(hour=0, minute=0, second=0, microsecond=0) }}
+    - condition: sun
+      after: sunrise
+      before: sunset
+    - condition: state
+      entity_id: input_boolean.privacy_mode
+      state: "off"
+    # A condition rather than an action step so a failed check leaves
+    # last_triggered untouched and the automation eligible to fire later.
+    - condition: numeric_state
+      entity_id: cover.master_bedroom_curtains
+      attribute: current_position
+      below: 21
+  action:
+    - action: cover.open_cover
+      target:
+        entity_id: cover.master_bedroom_curtains

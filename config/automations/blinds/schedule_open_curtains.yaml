@@ -7,9 +7,9 @@
       event_data:
         event: wake_up_alarm
   condition:
-    - condition: state
-      entity_id: person.jackson
-      state: home
+    - condition: numeric_state
+      entity_id: zone.home
+      above: 0
     - condition: template
       value_template: >-
         {{ this.attributes.last_triggered is none or
