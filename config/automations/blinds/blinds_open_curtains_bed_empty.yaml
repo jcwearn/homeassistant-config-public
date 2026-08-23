@@ -20,9 +20,12 @@
       value_template: >-
         {{ this.attributes.last_triggered is none or
            this.attributes.last_triggered | as_datetime | as_local < now().replace(hour=0, minute=0, second=0, microsecond=0) }}
-    - condition: sun
-      after: sunrise
-      before: sunset
+    # Sunrise alone is too dim - the room isn't actually bright until the sun is
+    # well clear of the horizon. Same 5 degree floor as
+    # turn_off_main_floor_lights_daylight in lights/lights_main_floor.yaml.
+    - condition: template
+      value_template: >-
+        {{ state_attr('sun.sun', 'elevation') | float(0) > 5 }}
     - condition: state
       entity_id: input_boolean.privacy_mode
       state: "off"
