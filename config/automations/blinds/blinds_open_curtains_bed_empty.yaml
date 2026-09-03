@@ -1,5 +1,6 @@
-# Weekend counterpart to schedule_open_curtains, which is gated to mon-fri.
-# Without this the curtains stay closed all weekend.
+# Catch-all for schedule_open_curtains: covers weekends, and on weekdays backs
+# it up when the alarm never reaches HA. Runs 15 minutes later, so on a normal
+# weekday the curtains are already open and the position check below no-ops.
 - id: blinds_open_curtains_bed_empty
   alias: Open Curtains After Bed Empty
   mode: single
@@ -12,10 +13,6 @@
       for:
         minutes: 30
   condition:
-    - condition: time
-      weekday:
-        - sat
-        - sun
     - condition: template
       value_template: >-
         {{ this.attributes.last_triggered is none or

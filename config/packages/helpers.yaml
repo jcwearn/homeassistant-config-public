@@ -19,6 +19,11 @@ input_boolean:
     name: Vacuum Delay
     icon: mdi:robot-vacuum
 
+input_button:
+  wake_up_alarm:
+    name: Wake Up Alarm
+    icon: mdi:alarm
+
 input_datetime:
   guest_mode_schedule:
     name: Guest Mode Schedule

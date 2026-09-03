@@ -2,10 +2,20 @@
   alias: Open Curtains After Alarm
   mode: single
   trigger:
+    # Removed from the iOS companion app in 2026.8.0 (home-assistant/iOS#5279)
+    # when the legacy SiriKit actions gave way to App Intents. Kept in case the
+    # action comes back; the input_button below is the live path.
     - trigger: event
       event_type: shortcut_event
       event_data:
         event: wake_up_alarm
+    # not_from guards against the restart transition - input_button does not
+    # restore state, so it materializes as `unknown` on every HA start.
+    - trigger: state
+      entity_id: input_button.wake_up_alarm
+      not_from:
+        - unknown
+        - unavailable
   condition:
     - condition: numeric_state
       entity_id: zone.home
@@ -24,6 +34,16 @@
   action:
     - delay:
         minutes: 15
+    # Both guards sit after the delay, not in the condition block, so they
+    # reflect the moment the curtains would actually move.
+    - condition: state
+      entity_id: input_boolean.privacy_mode
+      state: "off"
+    # Same 5 degree floor as blinds_open_curtains_bed_empty - sunrise alone is
+    # too dim for the room to be worth uncovering.
+    - condition: template
+      value_template: >-
+        {{ state_attr('sun.sun', 'elevation') | float(0) > 5 }}
     - condition: numeric_state
       entity_id: cover.master_bedroom_curtains
       attribute: current_position
