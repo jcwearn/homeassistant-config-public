@@ -36,16 +36,24 @@
   action:
     - delay:
         minutes: 15
-    # Both guards sit after the delay, not in the condition block, so they
-    # reflect the moment the curtains would actually move.
+    # Same 5 degree floor as blinds_open_curtains_bed_empty - sunrise alone is
+    # too dim for the room to be worth uncovering. A wait rather than a
+    # condition because in midwinter the sun does not clear 5 degrees until
+    # well over an hour after the alarm, and a condition there would just skip
+    # the morning entirely. wait_template re-checks before subscribing, so a
+    # sun already up passes straight through.
+    - wait_template: >-
+        {{ state_attr('sun.sun', 'elevation') | float(0) > 5 }}
+      # Give up at 11:00 - if it is not light by then something is wrong.
+      # Clamped at 0 because a negative timeout aborts the run with an error.
+      timeout: >-
+        {{ [(today_at('11:00') - now()).total_seconds(), 0] | max }}
+      continue_on_timeout: false
+    # Both re-checked below the wait, not above it, so they reflect the moment
+    # the curtains actually move - which may be an hour after the alarm.
     - condition: state
       entity_id: input_boolean.privacy_mode
       state: "off"
-    # Same 5 degree floor as blinds_open_curtains_bed_empty - sunrise alone is
-    # too dim for the room to be worth uncovering.
-    - condition: template
-      value_template: >-
-        {{ state_attr('sun.sun', 'elevation') | float(0) > 5 }}
     - condition: numeric_state
       entity_id: cover.master_bedroom_curtains
       attribute: current_position
