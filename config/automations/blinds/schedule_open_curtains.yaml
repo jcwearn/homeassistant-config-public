@@ -9,11 +9,13 @@
       event_type: shortcut_event
       event_data:
         event: wake_up_alarm
-    # not_from guards against the restart transition - input_button does not
-    # restore state, so it materializes as `unknown` on every HA start.
+    # not_to, not not_from: input_button does not restore state, so it comes
+    # back as `unknown` on every HA start and the first press of the day is
+    # always `unknown` -> timestamp. Filtering on `from` swallowed exactly the
+    # press we want; filtering on `to` drops the restart blip instead.
     - trigger: state
       entity_id: input_button.wake_up_alarm
-      not_from:
+      not_to:
         - unknown
         - unavailable
   condition:
