@@ -27,8 +27,10 @@ open_blinds:
         office_allowed: >-
           {{ is_state('binary_sensor.office_bathroom_sensor_magnet_contact', 'on')
              and is_state('binary_sensor.office_sensor_magnet_contact', 'on') }}
+        # Guest mode keeps the shade under the guest's control, not ours.
         guest_allowed: >-
-          {{ is_state('binary_sensor.guest_bedroom_sensor_magnet_contact', 'on') }}
+          {{ is_state('input_boolean.guest_override', 'off')
+             and is_state('binary_sensor.guest_bedroom_sensor_magnet_contact', 'on') }}
     # If all rooms allowed, open everything at once
     - if:
         - condition: template

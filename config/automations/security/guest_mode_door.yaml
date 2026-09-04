@@ -1,13 +1,23 @@
 - id: guest_mode_door
   alias: Guest Mode - Door
   trigger:
+    # Explicit from/to pairs plus a short debounce so a flaky sensor
+    # (on -> unavailable -> unknown -> on) can never flip guest mode. A failing
+    # sensor holds the last known value rather than writing a wrong one, which
+    # matters because guest mode gates the lockdown automations.
     - trigger: state
       entity_id: binary_sensor.guest_bedroom_sensor_magnet_contact
+      from: "off"
       to: "on"
+      for:
+        seconds: 30
       id: door_open
     - trigger: state
       entity_id: binary_sensor.guest_bedroom_sensor_magnet_contact
+      from: "on"
       to: "off"
+      for:
+        seconds: 30
       id: door_closed
   condition:
     - condition: state

@@ -8,6 +8,9 @@
         - sensor.front_door_sensor_magnet_battery
         - sensor.garage_door_battery
         - sensor.garage_door_sensor_magnet_battery
+        - sensor.guest_bedroom_bathroom_sensor_motion_battery
+        - sensor.guest_bedroom_sensor_magnet_battery
+        - sensor.guest_bedroom_sensor_motion_battery
         - sensor.living_room_sensor_cube_battery
         - sensor.main_floor_stairwell_sensor_motion_01_battery
         - sensor.main_floor_stairwell_sensor_motion_02_battery
@@ -45,3 +48,29 @@
         title: Smart Plug Unavailable
         message: >-
           {{ trigger.to_state.name }} is unavailable
+
+- id: door_sensor_unavailable
+  alias: Door Sensor Unavailable
+  trigger:
+    - trigger: state
+      entity_id:
+        - binary_sensor.front_door_sensor_magnet_contact
+        - binary_sensor.garage_door_sensor_magnet_contact
+        - binary_sensor.guest_bedroom_sensor_magnet_contact
+        - binary_sensor.main_floor_bathroom_sensor_magnet_contact
+        - binary_sensor.main_floor_closet_sensor_magnet_contact
+        - binary_sensor.master_bathroom_sensor_magnet_contact
+        - binary_sensor.master_bedroom_sensor_magnet_contact
+        - binary_sensor.office_bathroom_sensor_magnet_contact
+        - binary_sensor.office_sensor_magnet_contact
+        - binary_sensor.roof_door_sensor_magnet_contact
+        - binary_sensor.utility_room_sensor_magnet_contact
+      to: unavailable
+      for:
+        hours: 6
+  action:
+    - action: notify.mobile_app_jacksons_iphone
+      data:
+        title: Door Sensor Unavailable
+        message: >-
+          {{ trigger.to_state.name }} has been unavailable for 6 hours

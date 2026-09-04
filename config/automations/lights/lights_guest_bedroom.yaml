@@ -9,6 +9,17 @@
       value_template: >-
         {{ this.attributes.last_triggered is none or
            (now() - this.attributes.last_triggered).total_seconds() > 300 }}
+    # Guest mode turns the room dumb: switches and the remote only.
+    - condition: state
+      entity_id: input_boolean.guest_override
+      state: "off"
+    # Backstop for when guest mode was never enabled (e.g. a dead door sensor):
+    # never light the room someone is sleeping in overnight.
+    - condition: not
+      conditions:
+        - condition: time
+          after: "22:00:00"
+          before: "08:00:00"
     - condition: state
       entity_id: binary_sensor.guest_bedroom_sensor_magnet_contact
       state: "on"
@@ -48,9 +59,10 @@
     - condition: state
       entity_id: input_boolean.party_mode
       state: "off"
+    # Don't turn off a light the guest deliberately turned on.
     - condition: state
-      entity_id: binary_sensor.guest_bedroom_sensor_magnet_contact
-      state: "on"
+      entity_id: input_boolean.guest_override
+      state: "off"
   action:
     - if:
         - condition: trigger

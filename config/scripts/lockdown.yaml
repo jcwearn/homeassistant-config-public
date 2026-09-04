@@ -124,11 +124,11 @@ lock_down:
       target:
         entity_id:
           - fan.basement_fan
-          - fan.guest_bedroom_bathroom_fan
           - fan.living_room_fan
           - fan.main_floor_bathroom_fan
 
-    # Turn off guest/main floor lights and smart plug if guest override is off
+    # Turn off guest/main floor lights, guest fan and smart plug if guest
+    # override is off
     - if:
         - condition: state
           entity_id: input_boolean.guest_override
@@ -139,6 +139,9 @@ lock_down:
             entity_id:
               - light.guest_bedroom_lights
               - light.main_floor_lights
+        - action: fan.turn_off
+          target:
+            entity_id: fan.guest_bedroom_bathroom_fan
         - action: switch.turn_off
           target:
             entity_id: switch.living_room_smart_plug
