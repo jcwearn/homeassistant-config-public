@@ -17,12 +17,14 @@
       value_template: >-
         {{ this.attributes.last_triggered is none or
            this.attributes.last_triggered | as_datetime | as_local < now().replace(hour=0, minute=0, second=0, microsecond=0) }}
-    # Sunrise alone is too dim - the room isn't actually bright until the sun is
-    # well clear of the horizon. Same 5 degree floor as
-    # turn_off_main_floor_lights_daylight in lights/lights_main_floor.yaml.
+    # 1 degree, matching schedule_open_curtains - a few minutes past sunrise,
+    # which HA puts at -0.833 degrees to allow for refraction. Deliberately
+    # below the 5 degree floor turn_off_main_floor_lights_daylight still uses:
+    # when to stop lighting the main floor is a different judgment than when
+    # the bedroom is bright enough to uncover.
     - condition: template
       value_template: >-
-        {{ state_attr('sun.sun', 'elevation') | float(0) > 5 }}
+        {{ state_attr('sun.sun', 'elevation') | float(0) > 1 }}
     - condition: state
       entity_id: input_boolean.privacy_mode
       state: "off"
