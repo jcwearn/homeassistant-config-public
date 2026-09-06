@@ -1,6 +1,7 @@
 # Catch-all for schedule_open_curtains: covers weekends, and on weekdays backs
-# it up when the alarm never reaches HA. Runs 15 minutes later, so on a normal
-# weekday the curtains are already open and the position check below no-ops.
+# it up when the alarm never reaches HA. Both gate on the same 1 degree sun
+# floor, so on a dark morning the two can finish together - harmless, since
+# cover.open_cover is idempotent and the position check below usually no-ops.
 - id: blinds_open_curtains_bed_empty
   alias: Open Curtains After Bed Empty
   mode: single
@@ -17,24 +18,42 @@
       value_template: >-
         {{ this.attributes.last_triggered is none or
            this.attributes.last_triggered | as_datetime | as_local < now().replace(hour=0, minute=0, second=0, microsecond=0) }}
-    # 1 degree, matching schedule_open_curtains - a few minutes past sunrise,
-    # which HA puts at -0.833 degrees to allow for refraction. Deliberately
-    # below the 5 degree floor turn_off_main_floor_lights_daylight still uses:
-    # when to stop lighting the main floor is a different judgment than when
-    # the bedroom is bright enough to uncover.
-    - condition: template
-      value_template: >-
+    # The 30 minute empty-bed trigger also fires on a 3am bathroom trip or a
+    # night away. Gating on the clock here, rather than on the sun as this
+    # automation used to, drops those in the condition block - which leaves
+    # last_triggered unstamped and the automation still eligible for the real
+    # morning. A sun condition here could not do that job once the sun check
+    # became a wait, because last_triggered is stamped at trigger time.
+    - condition: time
+      after: "05:00:00"
+      before: "12:00:00"
+  action:
+    # Wait for the light rather than giving up on the morning, matching
+    # schedule_open_curtains. wait_template re-checks before subscribing, so a
+    # sun already up passes straight through and only a dark morning parks.
+    - wait_template: >-
         {{ state_attr('sun.sun', 'elevation') | float(0) > 1 }}
+      # Same noon cutoff as the time condition above. Clamped at 0 because a
+      # negative timeout aborts the run with an error.
+      timeout: >-
+        {{ [(today_at('12:00') - now()).total_seconds(), 0] | max }}
+      continue_on_timeout: false
+    # All three re-checked below the wait, which may have parked for an hour.
+    # The bed check is the point of the exercise: someone who got up before
+    # first light and went back to sleep must not get the curtains opened on
+    # them. Unlike the old condition block, a failure here does burn the day -
+    # last_triggered is already stamped - but open_blinds_in_morning still
+    # catches it on the way downstairs.
+    - condition: state
+      entity_id: binary_sensor.bed_presence_c18e1c_bed_occupied_either
+      state: "off"
     - condition: state
       entity_id: input_boolean.privacy_mode
       state: "off"
-    # A condition rather than an action step so a failed check leaves
-    # last_triggered untouched and the automation eligible to fire later.
     - condition: numeric_state
       entity_id: cover.master_bedroom_curtains
       attribute: current_position
       below: 21
-  action:
     - action: cover.open_cover
       target:
         entity_id: cover.master_bedroom_curtains
