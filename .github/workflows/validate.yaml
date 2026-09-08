@@ -65,6 +65,7 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
+          hostname: gh-${{ github.event.repository.name }}-validate-${{ github.run_id }}
 
       - name: Wait for Tailscale connectivity
         run: tailscale ping --until-direct=false -c 3 ${{ vars.HA_TAILSCALE_HOST }}
