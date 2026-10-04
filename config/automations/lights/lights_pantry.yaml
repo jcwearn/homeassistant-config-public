@@ -9,6 +9,12 @@
       entity_id: binary_sensor.pantry_contact
       to: "off"
       id: door_closed
+    - trigger: state
+      entity_id: binary_sensor.pantry_contact
+      to: "on"
+      for:
+        minutes: 10
+      id: door_left_open
   action:
     - choose:
         - conditions:
@@ -20,7 +26,9 @@
                 entity_id: scene.kitchen_pantry_open_pantry
         - conditions:
             - condition: trigger
-              id: door_closed
+              id:
+                - door_closed
+                - door_left_open
           sequence:
             - if:
                 - condition: state
