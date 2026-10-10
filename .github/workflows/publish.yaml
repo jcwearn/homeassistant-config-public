@@ -8,7 +8,7 @@ on:
 
 jobs:
   publish:
-    uses: jcwearn/workflows/.github/workflows/public-sync.yaml@5a87eda65ecf9ee48da24b1d2d8c5ac53c335aed  # v1.8.4
+    uses: jcwearn/workflows/.github/workflows/public-sync.yaml@fa13c66a7b05b058081c96b66a88bcdf71bd4706  # v1.8.6
     with:
       target-repo: jcwearn/homeassistant-config-public
       readme-override: .github/public-README.md
