@@ -94,16 +94,27 @@
       value_template: >-
         {{ (now() - states.light.main_floor_lights.last_changed).total_seconds() >= 300 }}
   action:
+    - variables:
+        # Kitchen at the Cooking/Cleaning scene (Kitchen Button) means it was
+        # turned on on purpose - turn off the rest of the main floor only.
+        kitchen_explicit: >-
+          {{ is_state('light.kitchen', 'on') and
+             state_attr('light.kitchen', 'brightness') == 255 and
+             state_attr('light.kitchen', 'color_temp_kelvin') == 4291 }}
+        targets: >-
+          {{ ['light.living_room', 'light.stairwell', 'light.dining_room_light',
+              'light.main_floor_bathroom_lights']
+             if kitchen_explicit else ['light.main_floor_lights'] }}
     - action: logbook.log
       data:
         name: Lights Watchdog
         message: >-
           Turned off light.main_floor_lights - main floor is bright (on for
           {{ ((now() - states.light.main_floor_lights.last_changed).total_seconds() / 60)
-             | round(0) }} minutes)
+             | round(0) }} minutes){{ ' (kept kitchen on)' if kitchen_explicit else '' }}
         entity_id: light.main_floor_lights
     - action: light.turn_off
       target:
-        entity_id: light.main_floor_lights
+        entity_id: "{{ targets }}"
       data:
         transition: 20
