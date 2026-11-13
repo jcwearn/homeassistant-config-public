@@ -94,9 +94,3 @@ homekit:
     entity_config:
       alarm_control_panel.ha_alarm:
         code: !secret alarm_pin  # pass-through code for HomeKit arm/disarm
-  - name: Living Room TV
-    port: 21065  # TVs need accessory mode; default bridge holds 21064
-    mode: accessory
-    filter:
-      include_entities:
-        - media_player.living_room_lg_webos_tv_oled77g1pua
