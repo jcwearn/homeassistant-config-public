@@ -10,13 +10,10 @@ on:
       - ".github/workflows/validate.yaml"
       - ".github/workflows/mock-secrets-config.json"
       - ".github/scripts/**"
+  # No paths filter: a PR that touches nothing under config/ would otherwise
+  # get zero checks, and Renovate treats zero checks as pending and never
+  # automerges it.
   pull_request:
-    paths:
-      - "config/**"
-      - ".yamllint.yaml"
-      - ".github/workflows/validate.yaml"
-      - ".github/workflows/mock-secrets-config.json"
-      - ".github/scripts/**"
   workflow_dispatch:
 
 jobs:
