@@ -59,6 +59,9 @@
     - condition: state
       entity_id: input_boolean.party_mode
       state: "off"
+    - condition: state
+      entity_id: input_boolean.guest_room_lights_frozen
+      state: "off"
     # Don't turn off a light the guest deliberately turned on.
     - condition: state
       entity_id: input_boolean.guest_override

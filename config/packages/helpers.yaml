@@ -2,6 +2,9 @@ input_boolean:
   master_bedroom_lights_frozen:
     name: Master Bedroom Lights Frozen
     icon: mdi:snowflake
+  guest_room_lights_frozen:
+    name: Guest Room Lights Frozen
+    icon: mdi:snowflake
   guest_override:
     name: Guest Override
   party_mode:

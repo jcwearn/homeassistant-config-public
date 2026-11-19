@@ -1,0 +1,14 @@
+- id: schedule_guest_room_lights_frozen_reset
+  alias: Guest Room Lights Frozen - Nightly Reset at 4 AM
+  mode: single
+  trigger:
+    - trigger: time
+      at: "04:00:00"
+  condition:
+    - condition: state
+      entity_id: input_boolean.guest_room_lights_frozen
+      state: "on"
+  action:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.guest_room_lights_frozen
